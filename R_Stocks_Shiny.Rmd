@@ -1,0 +1,580 @@
+---
+title: "R_Stocks_Shiny"
+author: "JAT"
+date: '2022-12-03'
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r Libraries needed - Installation}
+#Required for the first use of the program in a device
+
+
+# install.packages(c("rlang","devtools"), dependencies = TRUE)
+
+#install.packages("BatchGetSymbols") #substituted for yfR
+#devtools::install_github('msperlin/yfR') #yfR install option 1
+#install.packages('yfR', dependencies = TRUE) #yfR install option 2
+#install.packages("priceR", dependencies = TRUE) 
+#install.packages("Quandl", dependencies = TRUE) #API key needed
+#install.packages("quantmod", dependencies = TRUE) 
+#install.packages("qmao", repos="http://R-Forge.R-project.org", dependencies = TRUE)
+
+# install.packages(c("tibble", "dplyr","writexl","shiny","shinythemes","shinyWidgets","scales","readxl","dtplyr","tidyverse","DT","ggthemes","plotly","plyr","leaflet","ggplot2","lubridate","reshape2"), dependencies = TRUE) 
+
+
+
+```
+
+```{r Libraries check}
+#If needed for debugging
+
+
+
+# pkg = tibble::tibble(
+#   Package = names(installed.packages()[,3]),
+#   Version = unname(installed.packages()[,3])
+# )
+# 
+# 
+# pkg_filtered=dplyr::filter(pkg, Package %in% c("tibble","yfR","priceR","Quandl","quantmod","qmao" "dplyr","shiny","shinythemes","shinyWidgets","scales","readxl","dtplyr","tidyverse","DT","ggthemes","plotly","plyr","leaflet","devtools","ggplot2","rlang"))
+
+#setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+#write.csv(pkg_filtered,paste(getwd(),"/pkgs_your_name.csv",sep=""), row.names = FALSE)
+
+
+#packageVersion("rlang")
+#"rlang" %in% loadedNamespaces()
+
+```
+
+
+```{r Load the libraries}
+
+
+#library('data.table')
+
+install.packages("pacman")
+pacman::p_load(dplyr,dtplyr, shiny, shinythemes,shinyWidgets,readxl,scales,tidyverse,DT,ggthemes,ggplot2,plotly,plyr,leaflet,devtools)
+
+
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+#setwd("C:/Users/your/windows/path")
+#getwd()
+```
+
+```{r libraries}
+
+#library("BatchGetSymbols") #depricated --->yfR
+
+library("yfR") #historical stock valuation -> Instead of BatchGetSymbols
+library("priceR") #inflation / currency exchange ===> adjust_for_inflation
+library("quantmod") #dividends (getDividends), metals price
+library("Quandl")   #EPS, debt, assets (#API key needed)
+
+
+
+library("qmao") #quand mod add ons -> EPS
+library("dplyr")
+library("lubridate")
+library('plotly')
+library("readxl")
+library("ggplot2")
+library("reshape2")
+library("rstudioapi")
+
+
+
+library(shiny)
+library(shinythemes)
+library(shinyWidgets)
+
+
+
+library(DT)
+
+
+```
+
+```{r Portfolio read from excel}
+
+# set as direction the one of .Rmd archive; .xlsx and .Rmd mut be on same folder
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+  
+my_portfolio <- read_excel("Portfolio.xlsx", sheet="portfolio1")
+
+# clear empty cells in my_data; overwrite it
+my_portfolio <- na.omit(my_portfolio)
+
+
+
+```
+
+```{r Portfolio read from excel}
+
+#test_ticker <- my_portfolio$Ticker
+#test_ticker <- c('NKE','PG','JNJ')
+test_ticker <- c('NKE','JNJ','ABT','PG','O','ABT','CAT','PEP','KO','LEG','VFC','AMT','MO','BLK','CAT','ABBV','T','VZ','SWK','TROW','MRK','PFE','INTC','MMM','MCD','BMY')
+
+```
+
+```{r dividend analysys (amount & growth) - yfr & quantmod - interactive ready}
+
+
+
+
+##### tabpanel -> Stock Analysis ##### 
+      df_historical <- yf_get(tickers = test_ticker,
+                              first_date= "1990-01-01",
+                              last_date= Sys.Date()-10,
+                              thresh_bad_data = 0.2,
+                              freq_data="monthly") %>% select(ticker, price_close, ref_date)
+      
+      
+
+##### tabpanel -> Dividend Analysis ##### 
+
+      divs <- getDividends(test_ticker[1], 
+                   from = "1990-01-01",
+                   to = Sys.Date()-10, 
+                   src = "yahoo", 
+                   auto.assign = TRUE, 
+                   auto.update = TRUE, 
+                   verbose = FALSE)
+      
+      
+      divs <- data.frame(date=index(divs), coredata(divs))
+      colnames(divs) <- c('date','div')
+      
+      
+      
+      
+      ### Divs Evolution ###
+      
+      divs$ticker <- rep(test_ticker[1],nrow(divs))
+      
+      
+      for(i in 2:length(test_ticker)) {
+      
+        aux <- getDividends(test_ticker[i], 
+                   from = "1990-01-01",
+                   to = Sys.Date()-10, 
+                   src = "yahoo", 
+                   auto.assign = TRUE, 
+                   auto.update = TRUE, 
+                   verbose = FALSE)
+      
+      
+      aux <- data.frame(date=index(aux), coredata(aux))
+      colnames(aux) <- c('date','div')
+      
+      aux$ticker <- rep(test_ticker[i],nrow(aux))
+      
+      #append
+      divs <- rbind(divs, aux)
+       
+      }
+      
+      
+      
+      
+      ### GROUP BY YEAR & ticker
+      
+      divs_agg <- setNames( aggregate(div ~ year(date) + ticker, data = divs, FUN = sum, na.rm = TRUE),
+                          c("Year_div","ticker","div"))
+      
+      
+      
+      
+      ### Quandl data
+      df1_quandl <-  Quandl.datatable('SHARADAR/SF1',
+                                     ticker=test_ticker, 
+                                     calendardate.gte='2000-12-31',
+                                     qopts.columns=c('ticker' ,'dps','eps','debt','assets','calendardate'))
+      df1_quandl$payoutratio = df1_quandl$dps/df1_quandl$eps
+      df1_quandl$debt_assets = df1_quandl$debt/df1_quandl$assets
+
+
+
+
+
+##### tabpanel -> Indexes ##### 
+
+        my_ticker <- c('^GSPC')
+        first_date <- Sys.Date() - 11000
+        last_date <- Sys.Date()-10
+        
+        # fetch data
+        result_index <- yf_get(tickers = my_ticker, 
+                             first_date = first_date,
+                             last_date = last_date,
+                             freq_data = "weekly")
+
+
+##### tabpanel -> Commodities ##### 
+
+
+      my_ticker <- c('GC=F')
+      result_gold <- yf_get(tickers = my_ticker, 
+                           first_date = first_date,
+                           last_date = last_date,
+                           freq_data = "weekly",
+                           thresh_bad_data = 0.25)
+      
+      df_IndexComm <- merge(result_index, result_gold, by = "ref_date") 
+      df_IndexComm$KPI <- df_IndexComm$price_close.x/df_IndexComm$price_close.y
+      
+        
+            
+              
+               plot_ly(
+                       data = df_IndexComm,
+                       x = ~ref_date,
+                       y = ~KPI,
+                       type = "bar"
+                       )  %>% layout(title = 'Sp500 to Gold Ratio')
+               
+               
+               
+##### tabpanel -> Currencies #####                
+               
+      # exc_rate <- historical_exchange_rates("USD", to = "PLN",
+      #                                     start_date = "2000-01-10",
+      #                                     end_date = "2022-11-30")
+      # 
+      # 
+      # colnames(exc_rate)[which(names(exc_rate) == "date")] <- "ref_date"
+      # colnames(exc_rate)[2] <- "ratio"
+            
+    
+          
+               
+
+
+```
+
+
+```{r dashboard interactive v1}
+
+
+min_year = year(first_date)
+max_year = 2022
+
+#library(rstudio/shiny)
+
+## Only run this example in interactive R sessions
+
+if (interactive()) {
+  
+  
+  
+ 
+  shinyApp(
+    
+    ui = fluidPage(
+
+
+   titlePanel(h1("R Stocks", align = "center")),
+
+   tabsetPanel(               
+           tabPanel("Stocks Analysis", 
+                     sidebarLayout(
+               sidebarPanel(width = 3, 
+                         
+                            sliderInput("years_stocks",
+                                        label = h3("Years"),
+                                        min = min_year, max = max_year, value = c(2000, 2020)),
+                            selectInput(
+                                        'selected_tickers',
+                                        'Tickers',
+                                        test_ticker,
+                                        selected = c('PG','JNJ'),
+                                        multiple = TRUE,
+                                        selectize = TRUE,
+                                        width = NULL,
+                                        size = NULL
+                                      ),
+                           ),
+               
+               
+               mainPanel(
+                       fluidRow(
+                            column(12,
+                            
+                              h1('yfR', align = "center"),
+                              plotlyOutput("Stocks_evolution"),
+                                )
+                              )
+                      ) #end main panel (stock analysis)
+           ) #end sidebarLayout (stock analysis)
+                    
+                    ), #tab panel end stock analysis###
+           
+           tabPanel("Dividends Analysis",
+             sidebarLayout(
+               sidebarPanel(width = 3, 
+                         
+                           
+                            sliderInput("years_divs",
+                                        label = h3("Years"),
+                                        min = min_year, max = max_year, value = c(2000, 2020)),
+                            selectInput(
+                                        'selected_tickers',
+                                        'Tickers',
+                                        test_ticker,
+                                        selected = c('PG','JNJ'),
+                                        multiple = TRUE,
+                                        selectize = TRUE,
+                                        width = NULL,
+                                        size = NULL
+                                      ),
+                             sliderInput("n_years",
+                                "Check n-y Dividend Growth",
+                                min = 1, max = 10, value = 5,width = "90%"),
+                           ),
+               
+               
+               mainPanel(
+                       fluidRow(
+                            column(12,
+                              h1('QuantMod', align = "center"),
+                              br(),
+                              plotlyOutput("Dividend_evolution"),
+                              br(),
+                              plotlyOutput("Dividend_n_growth"),
+                              br(),
+                              br(),
+                              h1('Quandl (API key required)', align = "center"),
+                              br(),
+                              plotlyOutput("Company_Info1"),
+                                )
+                              )
+                      ) #end main panel (dividend analysis)
+           )
+       ), #dividend analysis tab panel end ###
+       tabPanel("Indexes", h1("New tab") ),
+       tabPanel("Commodities", h1("New tab") ),
+       tabPanel("Currencies", 
+                     sidebarLayout(
+               sidebarPanel(width = 3, 
+                         
+                            sliderInput("years_curr",
+                                        label = h3("Years"),
+                                        min = min_year, max = max_year, value = c(2000, 2022)),
+                            selectInput(
+                                        'FIAT1',
+                                        'From FIAT',
+                                        c('USD','EUR','PLN'),
+                                        selected = 'USD',
+                                        multiple = FALSE,
+                                        selectize = TRUE
+                                      ),
+                            selectInput(
+                                        'FIAT2',
+                                        'To FIAT',
+                                        c('USD','EUR','PLN'),
+                                        selected = 'EUR',
+                                        multiple = FALSE,
+                                        selectize = TRUE
+                                      ),
+                           ),
+               
+               
+               mainPanel(
+                       fluidRow(
+                            column(12,
+                              h1('PriceR', align = "center"),
+                              plotlyOutput("Exchange_Rates"),
+                                )
+                              )
+                      ) #end main panel (currencies)
+           ) #end sidebarLayout (currencies)
+     
+                 ), #tab panel end (currencies)
+        tabPanel("Inflation", h1("First tab") )
+   )
+), #ui, fluidpage
+    
+    
+    
+    
+    server = function(input, output) {
+                                      
+      
+##### tabpanel -> Stock Analysis ##### 
+        ### Dataframes ###
+      
+          df_historical_interactive <- reactive ({
+                 
+                     return(          
+                        filter(df_historical[df_historical$ticker %in% input$selected_tickers ,],
+                               year(ref_date) >= input$years_stocks[1] &
+                               year(ref_date) <= input$years_stocks[2])
+                           )
+           })
+      
+        ### GRAPHS ###
+        output$Stocks_evolution <-renderPlotly({
+                        plot_ly(df_historical_interactive(), type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~ref_date, y = ~price_close, name = ~ticker)
+        })
+      
+                                   
+ ##### tabpanel -> Dividend Analysis #####                                    
+  ### Dataframes ###
+      
+      divs_agg_interactive <- reactive ({
+        
+                                 
+        return(          
+                  filter(divs_agg[divs_agg$ticker %in% input$selected_tickers ,] ,
+                         Year_div >= input$years_divs[1] &
+                         Year_div <= input$years_divs[2])
+                     )
+      
+      })
+      
+   
+      
+      growth_df_interactive  <- reactive ({
+        
+                                divs_agg = divs_agg_interactive()
+                                
+                                growth_df <- data.frame( #empty dataframe
+                                                            year_growth = integer(),
+                                                             Ticker = character(),
+                                                             Growth_hist = double()) 
+                               growth_hist=c()
+                               #n=1 #dividend growth of year Z vs Z-n (anualized)
+                               n=input$n_years
+                                
+                                unique(divs_agg$ticker)
+                                
+                                for ( j in 1:length(unique(divs_agg$ticker)) ) {
+                                  
+                                  divs_agg_ticker <- filter(divs_agg,ticker %in% unique(divs_agg$ticker)[j])
+                                  
+                                  
+                                  growth_hist=c()
+                                for(i in (n+1):nrow(divs_agg_ticker)) {
+                                
+                                
+                                  growth_hist[i-n] = ( (divs_agg_ticker$div[i]/divs_agg_ticker$div[i-n])^(1/n) -1)*100
+                                 
+                                }
+                                  
+                                  
+                                    
+                                  growth_df <-  rbind(growth_df,
+                                                      data.frame(year_growth=divs_agg_ticker$Year_div[- (1:n)], growth_hist) %>% mutate(Ticker = unique(divs_agg$ticker)[j]) 
+                                                      )
+                                  
+                                }
+                                
+                                return(growth_df)
+      
+      })
+      
+      
+        quandl_df_interactive  <- reactive ({
+
+         df1_quandl =  df1_quandl[df1_quandl$ticker %in% input$selected_tickers ,]
+            
+          return( 
+           df1_quandl  %>% filter( year(df1_quandl$calendardate) >= input$years_divs[1] &
+                           year(df1_quandl$calendardate) <= input$years_divs[2])
+                  )
+        })
+
+      ### GRAPHS ###
+        
+        
+            output$Dividend_evolution <-renderPlotly({
+               
+                  
+                                    plot_ly(
+                                            data = divs_agg_interactive(),
+                                            x = ~Year_div,
+                                            y = ~div,
+                                            type = "bar",
+                                            name = ~ticker,
+                                            color=~ticker
+                                          )  %>%
+                                           layout(title = 'Dividend Evolution')
+                                    
+             
+                                            }) 
+            
+            
+            output$Dividend_n_growth <-renderPlotly({
+
+                                       # plot_ly(growth_df, type = 'scatter', mode = 'lines')%>%
+                                       #        add_trace(x = ~year_growth, y = ~growth_hist, name = ~Ticker) %>%
+                                       #        layout(title =sprintf("Dividend growth %s-y ", input$n_years))
+
+              plot_ly(growth_df_interactive(), type = 'scatter', mode = 'lines')%>%
+                                              add_trace(x = ~year_growth, y = ~growth_hist, name = ~Ticker) %>%
+                                              layout(title =sprintf("Dividend growth %s-y ", input$n_years))
+
+              
+            })
+          
+            
+          
+          
+           output$Company_Info1 <-renderPlotly({
+
+                        
+                        plot_ly(quandl_df_interactive(), type = 'scatter', mode = 'lines')%>%
+                                                        add_trace(x = ~calendardate, y = ~100*payoutratio, name = ~ticker) %>%
+                                                       layout(title = 'Payout Ratio')
+
+            })
+           
+           
+           
+           ##### tabpanel -> Currencies ##### 
+        ### Dataframes ###
+      
+          exc_rate_interactive <- reactive ({
+                 
+            
+            
+                  exc_rate <- historical_exchange_rates(input$FIAT1, to = input$FIAT2,
+                                                      start_date = "2000-01-10",
+                                                      end_date = "2022-11-30")
+            
+            
+                  colnames(exc_rate)[which(names(exc_rate) == "date")] <- "ref_date"
+                  colnames(exc_rate)[2] <- "ratio"
+            
+                     return(          
+                        filter(exc_rate,
+                               year(ref_date) >= input$years_curr[1] &
+                               year(ref_date) <= input$years_curr[2])
+                           )
+           })
+      
+        ### GRAPHS ###
+        output$Exchange_Rates <-renderPlotly({
+                        plot_ly(
+                            data = exc_rate_interactive(),
+                            x = ~ref_date,
+                            y = ~ratio,
+                            type = "scatter",
+                            mode='lines')  %>% layout(title = 'Exchange Rate')
+        })
+          
+                            
+      
+                        } #server
+  ) #shinyapp
+  
+  
+} #if interactive
+
+
+
+```
