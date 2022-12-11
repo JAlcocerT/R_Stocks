@@ -20,6 +20,7 @@ editor_options:
 #install.packages("Quandl", dependencies = TRUE) #API key needed
 #install.packages("quantmod", dependencies = TRUE) 
 #install.packages("qmao", repos="http://R-Forge.R-project.org", dependencies = TRUE)
+#install.packages("yaml")
 
 # install.packages(c("tibble", "dplyr","writexl","shiny","shinythemes","shinyWidgets","scales","readxl","dtplyr","tidyverse","DT","ggthemes","plotly","plyr","leaflet","ggplot2","lubridate","reshape2"), dependencies = TRUE) 
 
@@ -56,13 +57,27 @@ editor_options:
 
 #library('data.table')
 
-install.packages("pacman")
-pacman::p_load(dplyr,dtplyr, shiny, shinythemes,shinyWidgets,readxl,scales,tidyverse,DT,ggthemes,ggplot2,plotly,plyr,leaflet,devtools)
+#install.packages("pacman")
+pacman::p_load(dplyr,dtplyr, shiny, shinythemes,shinyWidgets,readxl,scales,tidyverse,DT,ggthemes,ggplot2,plotly,plyr,leaflet,devtools,yaml)
+
+
+# Get your API key from quandl.com and include it on a 'config.yaml' file
+vars = yaml.load_file("config.yml")
+quandl_api = vars$config$quandl_api
+ 
+# Add the key to the Quandl keychain
+Quandl.api_key(quandl_api)
+
 
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 #setwd("C:/Users/your/windows/path")
-#getwd()
+setwd("C:/Users/Jesus Alcocer/OneDrive - EPAM/MIO/Yosus")
+getwd()
+
+
+
+
 ```
 
 ```{r libraries}
@@ -116,29 +131,25 @@ my_portfolio <- na.omit(my_portfolio)
 
 #test_ticker <- my_portfolio$Ticker
 #test_ticker <- c('NKE','PG','JNJ')
-test_ticker <- c('NKE','JNJ','ABT','PG','O','ABT','CAT','PEP','KO','LEG','VFC','AMT','MO','BLK','CAT','ABBV','T','VZ','SWK','TROW','MRK','PFE','INTC','MMM','MCD','BMY')
+test_ticker <- c('JNJ','ABT','PG','VFC','O','ABT','PEP','KO','LEG','AMT','MO','BLK','ABBV','T','VZ','SWK','TROW','MRK','PFE','INTC','MMM','MCD','BMY','EPD','RIO','NKE','CAT','WBA','tak','mc.pa','t.to','tyo.4502','CL') 
 
 ```
 
-```{r dividend analysys (amount & growth) - yfr & quantmod - interactive ready}
-
-
+```{r Data query - yfr & quantmod & quandl & PriceR}
 
 
 ##### tabpanel -> Stock Analysis ##### 
       df_historical <- yf_get(tickers = test_ticker,
-                              first_date= "1990-01-01",
-                              last_date= Sys.Date()-10,
+                              first_date= "1960-01-01",
+                              last_date= Sys.Date()-1,
                               thresh_bad_data = 0.2,
                               freq_data="monthly") %>% select(ticker, price_close, ref_date)
       
-      
-
 ##### tabpanel -> Dividend Analysis ##### 
 
       divs <- getDividends(test_ticker[1], 
-                   from = "1990-01-01",
-                   to = Sys.Date()-10, 
+                   from = "1960-01-01",
+                   to = Sys.Date()-1, 
                    src = "yahoo", 
                    auto.assign = TRUE, 
                    auto.update = TRUE, 
@@ -149,8 +160,6 @@ test_ticker <- c('NKE','JNJ','ABT','PG','O','ABT','CAT','PEP','KO','LEG','VFC','
       colnames(divs) <- c('date','div')
       
       
-      
-      
       ### Divs Evolution ###
       
       divs$ticker <- rep(test_ticker[1],nrow(divs))
@@ -159,7 +168,7 @@ test_ticker <- c('NKE','JNJ','ABT','PG','O','ABT','CAT','PEP','KO','LEG','VFC','
       for(i in 2:length(test_ticker)) {
       
         aux <- getDividends(test_ticker[i], 
-                   from = "1990-01-01",
+                   from = "1960-01-01",
                    to = Sys.Date()-10, 
                    src = "yahoo", 
                    auto.assign = TRUE, 
@@ -178,26 +187,80 @@ test_ticker <- c('NKE','JNJ','ABT','PG','O','ABT','CAT','PEP','KO','LEG','VFC','
       }
       
       
-      
-      
       ### GROUP BY YEAR & ticker
       
       divs_agg <- setNames( aggregate(div ~ year(date) + ticker, data = divs, FUN = sum, na.rm = TRUE),
                           c("Year_div","ticker","div"))
       
       
+      ### Historical yield evolution
       
+              # historical splits
+              hist_splits <- quantmod::getSplits(test_ticker[1])
+              hist_splits <- data.frame(date=index(hist_splits), coredata(hist_splits))
+              colnames(hist_splits) <- c('ref_date','split')
+              hist_splits$ticker <- rep(test_ticker[1],nrow(hist_splits))
+              
+              hist_splits =  hist_splits %>% arrange(desc(ref_date))
+                    hist_splits =  transform(
+                          hist_splits,
+                        split_c = cumprod(c(na.omit(split)))
+                      )
+        
+              for(i in 2:length(test_ticker)) {
+                
+                  aux <- quantmod::getSplits(test_ticker[i])
+                  aux <- data.frame(date=index(aux), coredata(aux))
+                  
+                colnames(aux) <- c('ref_date','split')
+                aux$ticker <- rep(test_ticker[i],nrow(aux))
+                
+                
+                aux =  aux %>% arrange(desc(ref_date))
+                aux =  transform(
+                      aux,
+                    split_c = cumprod(c(na.omit(split)))
+                  )
+                
+                #append
+                hist_splits <- rbind(hist_splits, aux)
+              }
+              
+        hist_splits$ym <- format(as.Date(hist_splits$ref_date), "%Y-%m")
       
-      ### Quandl data
-      df1_quandl <-  Quandl.datatable('SHARADAR/SF1',
-                                     ticker=test_ticker, 
-                                     calendardate.gte='2000-12-31',
-                                     qopts.columns=c('ticker' ,'dps','eps','debt','assets','calendardate'))
-      df1_quandl$payoutratio = df1_quandl$dps/df1_quandl$eps
-      df1_quandl$debt_assets = df1_quandl$debt/df1_quandl$assets
+        colnames(divs) <- c('ref_date','div','ticker')      
+        divs$ym <- format(as.Date(divs$ref_date), "%Y-%m")
+        df_historical$ym <- format(as.Date(df_historical$ref_date), "%Y-%m")
+        
+        #join the DF's
+        df_hist_yield = left_join(df_historical, divs, by=c('ym','ticker')) 
+        df_hist_yield = left_join(df_hist_yield, hist_splits, by=c('ym','ticker')) 
+        
+        
+        for(i in 1:length(test_ticker)) {
+        
+          df_hist_yield[df_hist_yield$ticker== test_ticker[i],] =  fill(df_hist_yield[df_hist_yield$ticker== test_ticker[i],] , div, .direction = 'down')
+          
+          df_hist_yield[df_hist_yield$ticker== test_ticker[i],] =  fill(df_hist_yield[df_hist_yield$ticker== test_ticker[i],] , split_c, .direction = 'up')
+        
+        }
+        
+        
+        df_hist_yield$div_yield <- 4*100*df_hist_yield$div/df_hist_yield$price_close
+        df_hist_yield$split_c = df_hist_yield$split_c %>% replace_na(1)
+        df_hist_yield$yield_corrected <- df_hist_yield$div_yield/df_hist_yield$split_c ### end historical yield evolution
+              
 
+        
+      ### Quandl data - (API needed)
+      df1_quandl <- Quandl.datatable('SHARADAR/SF1',
+                               ticker=test_ticker, 
+                               calendardate.gte='2000-12-31',
+                               qopts.columns=c('ticker','debt','assets','calendardate',
+                                               'payoutratio','grossmargin','ebitdamargin','ev','evebit','evebitda'))
 
-
+        df1_quandl$payoutratio = df1_quandl$dps/df1_quandl$eps
+        df1_quandl$debt_assets = df1_quandl$debt/df1_quandl$assets
 
 
 ##### tabpanel -> Indexes ##### 
@@ -212,9 +275,7 @@ test_ticker <- c('NKE','JNJ','ABT','PG','O','ABT','CAT','PEP','KO','LEG','VFC','
                              last_date = last_date,
                              freq_data = "weekly")
 
-
 ##### tabpanel -> Commodities ##### 
-
 
       my_ticker <- c('GC=F')
       result_gold <- yf_get(tickers = my_ticker, 
@@ -225,16 +286,13 @@ test_ticker <- c('NKE','JNJ','ABT','PG','O','ABT','CAT','PEP','KO','LEG','VFC','
       
       df_IndexComm <- merge(result_index, result_gold, by = "ref_date") 
       df_IndexComm$KPI <- df_IndexComm$price_close.x/df_IndexComm$price_close.y
-      
-        
-            
               
-               plot_ly(
-                       data = df_IndexComm,
-                       x = ~ref_date,
-                       y = ~KPI,
-                       type = "bar"
-                       )  %>% layout(title = 'Sp500 to Gold Ratio')
+               # plot_ly(
+               #         data = df_IndexComm,
+               #         x = ~ref_date,
+               #         y = ~KPI,
+               #         type = "bar"
+               #         )  %>% layout(title = 'Sp500 to Gold Ratio')
                
                
                
@@ -247,19 +305,12 @@ test_ticker <- c('NKE','JNJ','ABT','PG','O','ABT','CAT','PEP','KO','LEG','VFC','
       # 
       # colnames(exc_rate)[which(names(exc_rate) == "date")] <- "ref_date"
       # colnames(exc_rate)[2] <- "ratio"
-            
-    
-          
-               
-
-
 ```
 
 
-```{r dashboard interactive v1}
+```{r dashboard interactive v2}
 
-
-min_year = year(first_date)
+min_year = 1962
 max_year = 2022
 
 #library(rstudio/shiny)
@@ -267,10 +318,7 @@ max_year = 2022
 ## Only run this example in interactive R sessions
 
 if (interactive()) {
-  
-  
-  
- 
+
   shinyApp(
     
     ui = fluidPage(
@@ -297,8 +345,7 @@ if (interactive()) {
                                         size = NULL
                                       ),
                            ),
-               
-               
+
                mainPanel(
                        fluidRow(
                             column(12,
@@ -319,9 +366,9 @@ if (interactive()) {
                            
                             sliderInput("years_divs",
                                         label = h3("Years"),
-                                        min = min_year, max = max_year, value = c(2000, 2020)),
+                                        min = min_year, max = max_year, value = c(2000, 2022)),
                             selectInput(
-                                        'selected_tickers',
+                                        'selected_tickers_div',
                                         'Tickers',
                                         test_ticker,
                                         selected = c('PG','JNJ'),
@@ -334,8 +381,7 @@ if (interactive()) {
                                 "Check n-y Dividend Growth",
                                 min = 1, max = 10, value = 5,width = "90%"),
                            ),
-               
-               
+
                mainPanel(
                        fluidRow(
                             column(12,
@@ -345,10 +391,26 @@ if (interactive()) {
                               br(),
                               plotlyOutput("Dividend_n_growth"),
                               br(),
+                              plotlyOutput("Dividend_n_growth_distrib"),
+                              br(),
+                              h1('QuantMod & yfR', align = "center"),
+                              br(),
+                              plotlyOutput("Hist_yield_evolution"),
+                              br(),
+                              plotlyOutput("Hist_yield_box"),
+                              br(),
                               br(),
                               h1('Quandl (API key required)', align = "center"),
                               br(),
                               plotlyOutput("Company_Info1"),
+                              br(),
+                              plotlyOutput("Company_Info2"),
+                              br(),
+                              plotlyOutput("Company_Info3"),
+                              br(),
+                              plotlyOutput("Company_Info4"),
+                                      br(),
+                              plotlyOutput("Company_Info5"),
                                 )
                               )
                       ) #end main panel (dividend analysis)
@@ -380,8 +442,7 @@ if (interactive()) {
                                         selectize = TRUE
                                       ),
                            ),
-               
-               
+
                mainPanel(
                        fluidRow(
                             column(12,
@@ -429,7 +490,7 @@ if (interactive()) {
         
                                  
         return(          
-                  filter(divs_agg[divs_agg$ticker %in% input$selected_tickers ,] ,
+                  filter(divs_agg[divs_agg$ticker %in% input$selected_tickers_div ,] ,
                          Year_div >= input$years_divs[1] &
                          Year_div <= input$years_divs[2])
                      )
@@ -478,9 +539,18 @@ if (interactive()) {
       })
       
       
+       df_hist_yield_interactive <- reactive ({
+        return(          
+                  filter(df_hist_yield[df_hist_yield$ticker %in% input$selected_tickers_div ,] ,
+                         year(ref_date.x) >= input$years_divs[1] &
+                         year(ref_date.x) <= input$years_divs[2])
+                     )
+      })
+      
+      
         quandl_df_interactive  <- reactive ({
 
-         df1_quandl =  df1_quandl[df1_quandl$ticker %in% input$selected_tickers ,]
+         df1_quandl =  df1_quandl[df1_quandl$ticker %in% input$selected_tickers_div ,]
             
           return( 
            df1_quandl  %>% filter( year(df1_quandl$calendardate) >= input$years_divs[1] &
@@ -520,32 +590,90 @@ if (interactive()) {
 
               
             })
-          
             
+            
+              output$Dividend_n_growth_distrib <-renderPlotly({
+
+                                    
+
+              plot_ly(growth_df_interactive(), y=~growth_hist, type = 'box', name = ~Ticker)%>%
+                                              layout(title =sprintf("Dividend growth %s-y Distribution", input$n_years))
+
+              
+            })
+            
+                  
+            output$Hist_yield_evolution <-renderPlotly({
           
+                          plot_ly(df_hist_yield_interactive(), type = 'scatter', mode = 'lines') %>%
+                              add_trace(x = ~ym, y = ~yield_corrected, name = ~ticker)  %>%
+                              layout(title = paste('Historical Yield Evolution - Period ',input$years_divs[1], ' to ',input$years_divs[2],sep=""))
+                                            }) 
+            
+             output$Hist_yield_box <-renderPlotly({
+               
+                                      plot_ly(
+                                              data = df_hist_yield_interactive(),
+                                              y = ~yield_corrected,
+                                              type = 'box',
+                                              name = ~ticker,
+                                              color=~ticker
+                                            )  %>%
+                                             layout(title = paste('Historical Yield Distribution - Period ',input$years_divs[1], ' to ',input$years_divs[2],sep=""))
+                                            }) 
+            
           
            output$Company_Info1 <-renderPlotly({
 
-                        
                         plot_ly(quandl_df_interactive(), type = 'scatter', mode = 'lines')%>%
                                                         add_trace(x = ~calendardate, y = ~100*payoutratio, name = ~ticker) %>%
                                                        layout(title = 'Payout Ratio')
-
             })
            
+            output$Company_Info3 <-renderPlotly({
+
+                      plot_ly(quandl_df_interactive(), type = 'scatter', mode = 'lines')%>%
+                                          add_trace(x = ~calendardate, y = ~100*ebitdamargin, name = ~ticker)%>%
+                               layout(title = 'EBITDA Margin Evolution')
+            })
+            
+             output$Company_Info2 <-renderPlotly({
+
+                       plot_ly(quandl_df_interactive(), type = 'scatter', mode = 'lines')%>%
+                          add_trace(x = ~calendardate, y = ~100*grossmargin, name = ~ticker)%>%
+                           layout(title = 'Gross Margin Evolution')
+            })
+             
+              output$Company_Info4 <-renderPlotly({
+
+                        plot_ly(quandl_df_interactive(), type = 'scatter', mode = 'lines')%>%
+                                  add_trace(x = ~calendardate, y = ~100*evebitda, name = ~ticker)%>%
+                       layout(title = 'EV/EBITDA Evolution')
+            })
+              
+              
+              
+              
+            output$Company_Info5 <-renderPlotly({
+              plot_ly(quandl_df_interactive(), type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~calendardate, y = ~100*debt_assets, name = ~ticker)  %>%
+                    layout(
+                      yaxis = list(
+                        range=c(0,150)
+                      )
+                    ) %>%
+                          layout(title = 'Debt/Assets Evolution')
+            })
+              
            
-           
-           ##### tabpanel -> Currencies ##### 
+        ##### tabpanel -> Currencies ##### 
         ### Dataframes ###
       
           exc_rate_interactive <- reactive ({
                  
-            
-            
                   exc_rate <- historical_exchange_rates(input$FIAT1, to = input$FIAT2,
                                                       start_date = "2000-01-10",
                                                       end_date = "2022-11-30")
-            
             
                   colnames(exc_rate)[which(names(exc_rate) == "date")] <- "ref_date"
                   colnames(exc_rate)[2] <- "ratio"
@@ -566,15 +694,11 @@ if (interactive()) {
                             type = "scatter",
                             mode='lines')  %>% layout(title = 'Exchange Rate')
         })
-          
-                            
-      
+
                         } #server
   ) #shinyapp
   
   
 } #if interactive
-
-
 
 ```

@@ -1,5 +1,5 @@
 ---
-title: "R Notebook"
+title: "R_Stocks_Analysis"
 author: "JAT"
 output: html_document
 date: '2022-12-02'
@@ -57,7 +57,24 @@ install.packages(c("tibble", "dplyr","writexl","shiny","shinythemes","shinyWidge
 #library('data.table')
 
 #install.packages("pacman")
-pacman::p_load(dplyr,dtplyr, shiny, shinythemes,shinyWidgets,readxl,scales,tidyverse,DT,ggthemes,ggplot2,plotly,plyr,leaflet,devtools)
+pacman::p_load(dplyr,dtplyr,shinythemes,shinyWidgets,readxl,scales,... = tidyverse,DT,ggthemes,ggplot2,plotly,plyr,leaflet,devtools,yaml,tidyr)
+
+
+#library("BatchGetSymbols") #depricated --->yfR
+
+library("yfR")      #historical stock valuation -> Instead of BatchGetSymbols
+library("priceR")   #inflation / currency exchange ===> adjust_for_inflation
+library("quantmod") #dividends (getDividends), metals price
+library("Quandl")   #EPS, debt, assets (#API key needed)
+
+
+#library(tidyr)
+
+library("qmao")     #quand mod add ons -> EPS
+library("dplyr")
+library("lubridate")
+library("reshape2")
+library("rstudioapi")
 
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -71,25 +88,23 @@ quandl_api = vars$config$quandl_api
 
 ```
 
-```{r libraries}
 
-#library("BatchGetSymbols") #depricated --->yfR
+```{r quantmod - test}
 
-library("yfR") #historical stock valuation -> Instead of BatchGetSymbols
-library("priceR") #inflation / currency exchange ===> adjust_for_inflation
-library("quantmod") #dividends (getDividends), metals price
-library("Quandl")   #EPS, debt, assets (#API key needed)
+quantmod::getSplits('PG')
+
+quantmod::getSplits('LON.DRTY')
+
+quantmod::getSplits('T.TO')
+
+getSymbols("0941.hk")
+getSymbols("mc.pa") #LVMH
 
 
 
-library("qmao") #quand mod add ons -> EPS
-library("dplyr")
-library("lubridate")
-library('plotly')
-library("readxl")
-library("ggplot2")
-library("reshape2")
-library("rstudioapi")
+quantmod::getSymbols('PG')
+
+getSymbols.yahooj('TYO')
 
 
 ```
@@ -122,35 +137,42 @@ df0_quandl <- Quandl("WIKI/KO")
 df1_quandl <- Quandl.datatable('SHARADAR/SF1',
                                ticker=c('AAPL','PG'), 
                                calendardate.gte='2000-12-31',
-                               qopts.columns=c('ticker' ,'dps','eps','debt','assets','calendardate'))
+                               qopts.columns=c('ticker' ,'debt','assets','calendardate','payoutratio','grossmargin','ebitdamargin','ev','evebit','evebitda'))
 
-df1_quandl <- Quandl.datatable("SHARADAR/SF1", paginate = TRUE) #eps #dps #gross_margin #div_yield #debt #assets
+
+
+df1_quandl <- Quandl.datatable("SHARADAR/SF1", paginate = TRUE) #eps #dps #gross_margin #div_yield #debt #assets #ebitda #ev #ebitdamargin #...
+
 df1_quandl$payoutratio = df1_quandl$dps/df1_quandl$eps
 df1_quandl$debt_assets = df1_quandl$debt/df1_quandl$assets
 
-  ggplotly(
-  ggplot(df1_quandl, aes(x=calendardate, y=100*divyield, group=ticker)) + geom_line(aes(colour = ticker))
-  )
-  
-    ggplotly(
-  ggplot(df1_quandl, aes(x=calendardate, y=100*ebitdamargin, group=ticker)) + geom_line(aes(colour = ticker))
-  ) %>%
-        layout(title = 'EBITDA Margin Evolution')
-    
-    
-    ggplotly(
-  ggplot(df1_quandl, aes(x=calendardate, y=100*grossmargin, group=ticker)) + geom_line(aes(colour = ticker))
-  )  %>%
-        layout(title = 'Gross Margin Evolution')
 
-  ggplotly(
-  ggplot(df1_quandl, aes(x=calendardate, y=100*payoutratio, group=ticker)) + geom_line(aes(colour = ticker))
-  )%>%
+
+plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~calendardate, y = ~100*divyield, name = ~ticker)%>%
+        layout(title = 'div yield')
+
+
+plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~calendardate, y = ~100*payoutratio, name = ~ticker)%>%
         layout(title = 'Payout Ratio Evolution')
+
+plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~calendardate, y = ~100*ebitdamargin, name = ~ticker)%>%
+         layout(title = 'EBITDA Margin Evolution')
+   
+
+plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~calendardate, y = ~100*grossmargin, name = ~ticker)%>%
+         layout(title = 'Gross Margin Evolution')
+
+plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~calendardate, y = ~100*evebitda, name = ~ticker)%>%
+         layout(title = 'EV/EBITDA Evolution')
+    
   
-  ggplotly(
-  ggplot(df1_quandl, aes(x=calendardate, y=100*debt_assets, group=ticker)) + geom_line(aes(colour = ticker))
-  )  %>%
+plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~calendardate, y = ~100*debt_assets, name = ~ticker)  %>%
   layout(
     yaxis = list(
       range=c(0,150)
@@ -166,9 +188,13 @@ df1_quandl$debt_assets = df1_quandl$debt/df1_quandl$assets
                                ticker=c('NKE','PG','O','ABT','CAT','PEP','KO','LEG','VFC','AMT','MO','BLK','CAT','ABBV','T','VZ','SWK','TROW','MRK','PFE','INTC','MMM','MCD','BMY'),
                                    paginate = TRUE) 
   
-  df1c_quandl$payoutratio = df1c_quandl$dps/df1c_quandl$eps
+df1c_quandl$payoutratio = df1c_quandl$dps/df1c_quandl$eps
 df1c_quandl$debt_assets = df1c_quandl$debt/df1c_quandl$assets
   
+
+      
+plot_ly(df_hist_yield,y = ~yield_corrected, type = "box",name=~ticker)
+
   ggplotly(
   ggplot(df1c_quandl, aes(x=calendardate, y=100*divyield, group=ticker)) + geom_line(aes(colour = ticker))
   )
@@ -267,10 +293,15 @@ df_SPgold <- merge(result_SP, result_gold, by = "ref_date")
 df_SPgold$KPI <- df_SPgold$price_close.x/df_SPgold$price_close.y
 
   
-  ggplotly(
-  ggplot(df_SPgold, aes(x=ref_date, y=KPI)) + geom_line()
-  )
+        ggplotly(
+        ggplot(df_SPgold, aes(x=ref_date, y=KPI)) + geom_line()
+        )
 
+```
+
+
+```{r commodities - quandl test}
+Quandl("LBMA/GOLD")
 ```
 
 ```{r Portfolio read from excel}
@@ -292,8 +323,9 @@ my_portfolio <- na.omit(my_portfolio)
 # set options for algorithm
 #my_ticker <- 'META'
 my_ticker <- c('FRT','MMM','PG','^GSPC')
-
 my_ticker <- my_portfolio$Ticker
+my_ticker <- test_ticker
+
 
 first_date <- Sys.Date() - 30
 last_date <- Sys.Date()
@@ -305,6 +337,9 @@ df_historical <- yf_get(tickers = my_ticker,
                         last_date= Sys.Date()-10,
                         thresh_bad_data = 0.2,
                         freq_data="monthly") %>% select(ticker, price_close, ref_date)
+
+        plot_ly(df_historical, type = 'scatter', mode = 'lines')%>%
+          add_trace(x = ~ref_date, y = ~price_close, name = ~ticker)
 
 portf_value <- left_join(df_historical, my_portfolio, by=c('ticker'='Ticker')) %>% mutate(value = price_close*as.numeric(Amount) )
 
@@ -327,6 +362,11 @@ sp500 <- setNames(
           select( ref_date, price_close, Data) ,
           c("ref_date","value","Data")
 )
+
+
+    plot_ly(sp500, type = 'scatter', mode = 'lines')%>%
+      add_trace(x = ~ref_date, y = ~value, name = ~Data)
+
 
 sp500$value <- sp500$value*portf_value_agg$value[396]/ sp500$value[395]
 #adjust the value to the end of our portfolio value (in the beginning not all stocks are there) 
@@ -391,10 +431,16 @@ df_tickers <- result_aux %>% select(ticker, price_close, ref_date)
 ```{r evolution with other currency - priceR & yfR}
 
 exc_rate <- historical_exchange_rates("USD", to = "PLN",
-                          start_date = "2002-05-10", end_date = "2022-11-20")
+                                    start_date = "2000-01-10",
+                                    end_date = "2022-11-30")
 
 
 colnames(exc_rate)[which(names(exc_rate) == "date")] <- "ref_date"
+colnames(exc_rate)[2] <- "ratio"
+
+
+    ggplotly(ggplot(exc_rate, aes(x=ref_date, y=ratio)) + geom_line(aes())
+    )
 
 
 df_tickers_curr <- merge(df_tickers, exc_rate, by = "ref_date")                       # Merge data 1 & 2 and store
@@ -649,7 +695,7 @@ df_historical$yieldv3 <- df_historical$yieldv2*c(rep(2,6601),rep(1,13273-6602))
 
 # test_ticker <- c('NKE','PG','O','ABT','CAT','PEP','KO','LEG','VFC','AMT','MO','BLK','CAT','ABBV','T','VZ','SWK','TROW','MRK','PFE','INTC','MMM','MCD','BMY')
 
-test_ticker <- c('NKE','PG')
+test_ticker <- c('NKE','PG','mc.pa','tyo.4502','t.to')
 
 test_ticker <- c('BMY')
 
@@ -815,20 +861,14 @@ divs <- rbind(divs, aux)
 
 
 
-
 ### GROUP BY YEAR & ticker
 
 aggregate(divs$div, by=list(Year_div=year(divs$date)), FUN=sum)
 
 
-
-
 divs_agg <- setNames( aggregate(div ~ year(date) + ticker, data = divs, FUN = sum, na.rm = TRUE),
                     c("Year_div","ticker","div"))
 
-    
-    
-    
     
     plot_ly(
       data = divs_agg,
@@ -839,7 +879,6 @@ divs_agg <- setNames( aggregate(div ~ year(date) + ticker, data = divs, FUN = su
       color=~ticker
     )  %>%
         layout(title = 'Dividend Evolution')
-
 
 
 ### DIvs growth ###
@@ -883,12 +922,6 @@ for(i in (n+1):nrow(divs_agg_ticker)) {
     plot_ly(growth_df, type = 'scatter', mode = 'lines')%>%
       add_trace(x = ~year_growth, y = ~growth_hist, name = ~Ticker) %>%   
       layout(title =sprintf("Dividend growth %s-y ", n))
-
-
-
-
-
-
 
 
 ```
@@ -942,7 +975,257 @@ growth_df <-  rbind(growth_df,
 
 
 
-```{r historical yield}
+```{r historical yield - - quantmod & yFr - test}
+
+test_ticker <- 'JNJ'
+
+hist_splits <- quantmod::getSplits(test_ticker)
+
+
+hist_price <- yf_get(tickers = test_ticker,
+                        first_date= "1960-01-01",
+                        last_date= Sys.Date()-10,
+                        thresh_bad_data = 0.2,
+                        freq_data="monthly") %>% select(ticker, price_close, ref_date) 
+hist_price$ym <- format(as.Date(hist_price$ref_date), "%Y-%m")
+
+
+hist_divs <- getDividends(test_ticker, 
+                   from = "1960-01-01",
+                   to = Sys.Date()-10, 
+                   src = "yahoo", 
+                   auto.assign = TRUE, 
+                   auto.update = TRUE, 
+                   verbose = FALSE)
+      
+      
+hist_divs <- data.frame(date=index(hist_divs), coredata(hist_divs))
+colnames(hist_divs) <- c('ref_date','div')
+
+
+hist_divs$ym <- format(as.Date(hist_divs$ref_date), "%Y-%m")
+
+
+
+
+
+
+#library(tidyr)
+
+df_hist_yield = left_join(hist_price, hist_divs, by=c('ym')) 
+df_hist_yield =  fill(df_hist_yield, div, .direction = 'down')
+df_hist_yield$div_yield <- 4*100*df_hist_yield$div/df_hist_yield$price_close
+
+
+
+plot_ly(df_hist_yield, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~ym, y = ~price_close, name = ~ticker)
+
+
+
+plot_ly(df_hist_yield, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~ym, y = ~div, name = ~ticker)
+
+
+
+plot_ly(df_hist_yield, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~ym, y = ~div_yield, name = ~ticker)
+
+
+
+
+hist_splits <- data.frame(date=index(hist_splits), coredata(hist_splits))
+
+
+hist_splits$ref_date = rownames(hist_splits)
+colnames(hist_splits) <- c('ref_date','split')
+hist_splits$ym <- format(as.Date(hist_splits$ref_date), "%Y-%m")
+
+hist_splits =  hist_splits %>% arrange(desc(ref_date))
+
+
+hist_splits =  transform(
+            hist_splits,
+          split_c = cumprod(c(na.omit(split)))
+        )
+
+
+df_hist_yield = left_join(df_hist_yield, hist_splits, by=c('ym')) 
+
+df_hist_yield = fill(df_hist_yield, split_c, .direction = 'up')
+
+
+df_hist_yield$split_c = df_hist_yield$split_c %>% replace_na(1)
+
+
+
+df_hist_yield$yield_corrected <- df_hist_yield$div_yield/df_hist_yield$split_c
+
+
+
+plot_ly(df_hist_yield, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~ym, y = ~yield_corrected, name = ~ticker)
+
+
+plot_ly(df_hist_yield, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~ym, y = ~yield_corrected, name = ~ticker)
+s
+plot_ly(df_hist_yield,y = ~yield_corrected, type = "box",name=~ticker)
+
+
+```
+
+
+
+```{r historical yield - quantmod & yFr - interactive ready}
+
+
+test_ticker <- c('PG','JNJ','ko','mc.pa')
+
+
+
+# historical splits
+hist_splits <- quantmod::getSplits(test_ticker[1])
+hist_splits <- data.frame(date=index(hist_splits), coredata(hist_splits))
+colnames(hist_splits) <- c('ref_date','split')
+hist_splits$ticker <- rep(test_ticker[1],nrow(hist_splits))
+
+hist_splits =  hist_splits %>% arrange(desc(ref_date))
+      hist_splits =  transform(
+            hist_splits,
+          split_c = cumprod(c(na.omit(split)))
+        )
+
+      for(i in 2:length(test_ticker)) {
+      
+        aux <- quantmod::getSplits(test_ticker[i])
+        aux <- data.frame(date=index(aux), coredata(aux))
+        
+      colnames(aux) <- c('ref_date','split')
+      aux$ticker <- rep(test_ticker[i],nrow(aux))
+      
+      
+      aux =  aux %>% arrange(desc(ref_date))
+      aux =  transform(
+            aux,
+          split_c = cumprod(c(na.omit(split)))
+        )
+      
+      #append
+      hist_splits <- rbind(hist_splits, aux)
+      }
+
+      
+hist_splits$ym <- format(as.Date(hist_splits$ref_date), "%Y-%m")
+
+
+
+## historical price
+
+hist_price <- yf_get(tickers = test_ticker,
+                        first_date= "1960-01-01",
+                        last_date= Sys.Date()-10,
+                        thresh_bad_data = 0.2,
+                        freq_data="monthly") %>% select(ticker, price_close, ref_date) 
+hist_price$ym <- format(as.Date(hist_price$ref_date), "%Y-%m")
+
+
+## historical divs
+divs <- getDividends(test_ticker[1], 
+             from = "1960-01-01",
+             to = Sys.Date()-10, 
+             src = "yahoo", 
+             auto.assign = TRUE, 
+             auto.update = TRUE, 
+             verbose = FALSE)
+
+
+divs <- data.frame(date=index(divs), coredata(divs))
+colnames(divs) <- c('ref_date','div')
+
+
+
+
+### Divs Evolution ###
+
+divs$ticker <- rep(test_ticker[1],nrow(divs))
+
+
+for(i in 2:length(test_ticker)) {
+
+  aux <- getDividends(test_ticker[i], 
+             from = "1960-01-01",
+             to = Sys.Date()-10, 
+             src = "yahoo", 
+             auto.assign = TRUE, 
+             auto.update = TRUE, 
+             verbose = FALSE)
+
+
+aux <- data.frame(date=index(aux), coredata(aux))
+colnames(aux) <- c('ref_date','div')
+
+aux$ticker <- rep(test_ticker[i],nrow(aux))
+
+#append
+divs <- rbind(divs, aux)
+ 
+}
+       
+       
+divs$ym <- format(as.Date(divs$ref_date), "%Y-%m")
+
+
+
+
+#join the DF's
+df_hist_yield = left_join(hist_price, divs, by=c('ym','ticker')) 
+df_hist_yield = left_join(df_hist_yield, hist_splits, by=c('ym','ticker')) 
+
+
+for(i in 1:length(test_ticker)) {
+
+  df_hist_yield[df_hist_yield$ticker== test_ticker[i],] =  fill(df_hist_yield[df_hist_yield$ticker== test_ticker[i],] , div, .direction = 'down')
+  
+  df_hist_yield[df_hist_yield$ticker== test_ticker[i],] =  fill(df_hist_yield[df_hist_yield$ticker== test_ticker[i],] , split_c, .direction = 'up')
+
+}
+
+
+df_hist_yield$div_yield <- 4*100*df_hist_yield$div/df_hist_yield$price_close
+df_hist_yield$split_c = df_hist_yield$split_c %>% replace_na(1)
+df_hist_yield$yield_corrected <- df_hist_yield$div_yield/df_hist_yield$split_c
+      
+      plot_ly(df_hist_yield, type = 'scatter', mode = 'lines')%>%
+                          add_trace(x = ~ym, y = ~price_close, name = ~ticker)
+      
+      
+      plot_ly(df_hist_yield, type = 'scatter', mode = 'lines')%>%
+                          add_trace(x = ~ym, y = ~div, name = ~ticker)
+      
+      
+      plot_ly(df_hist_yield, type = 'scatter', mode = 'lines')%>%
+                          add_trace(x = ~ym, y = ~yield_corrected, name = ~ticker)
+      
+      
+      plot_ly(df_hist_yield,y = ~yield_corrected, type = "box",name=~ticker)
+      
+```
+
+
+
+```{r export data}
+
+#Save data locally to work offline and avoid distractions
+
+
+```
+
+
+
+```{r import local data}
+
+#No internet access to fetch the data? Use this chunk to import already downloaded data
 
 
 
