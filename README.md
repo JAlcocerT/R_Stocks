@@ -19,3 +19,8 @@
 #### Visualizations
 * <https://github.com/plotly/plotly.R>
 * <https://github.com/rstudio/shiny>
+
+
+## IMPORTANT - NO INVESTMENT ADVICE
+
+The Content is for informational purposes only on how to create a Shiny dashboard with publicly available data, you should not construe any such information or other material as legal, tax, investment, financial, or other advice. Nothing contained on this repository is a recommendation to buy or sell any securities or other financial instruments.
