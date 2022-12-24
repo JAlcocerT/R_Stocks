@@ -67,6 +67,7 @@ library("priceR")   #inflation / currency exchange ===> adjust_for_inflation
 library("quantmod") #dividends (getDividends), metals price
 library("Quandl")   #EPS, debt, assets (#API key needed)
 
+library(tidyr) #for drop_na
 
 #library(tidyr)
 
@@ -76,10 +77,14 @@ library("lubridate")
 library("reshape2")
 library("rstudioapi")
 
+library(rstudioapi) #to manage the directory
 
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+#setwd('C:/Users')
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) #this Rmd file must be saved
+setwd('C:/Users/Jesus Alcocer/Desktop/GH/R_Stocks')
+
 #setwd("C:/Users/your/windows/path")
-#getwd()
+getwd()
 
 
 vars = yaml.load_file("config.yml")
@@ -299,6 +304,20 @@ df_SPgold$KPI <- df_SPgold$price_close.x/df_SPgold$price_close.y
 
 ```
 
+```{r best/worst days miss - market timming analysis}
+# 
+# attach(result_SP)
+# detach(result_SP)
+
+result_SP[order(result_SP$ret_closing_prices),]$ret_closing_prices
+
+
+cumprod(
+          result_SP[order(result_SP$ret_closing_prices),]$ret_closing_prices
+
+)
+
+```
 
 ```{r commodities - quandl test}
 Quandl("LBMA/GOLD")
@@ -316,6 +335,89 @@ my_portfolio <- na.omit(my_portfolio)
 
 ```
 
+```{r FED interest rates and inflation data -  read from excel}
+
+# set as direction the one of .Rmd archive; .xlsx and .Rmd mut be on same folder
+#setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+  
+
+
+fed_rates <- read_excel("fed-funds-rate-historical-chart.xlsx", sheet="data")
+
+# clear empty cells in my_data; overwrite it
+fed_rates <- na.omit(fed_rates)
+colnames(fed_rates) <- c('ref_date','value')
+                               
+                                  
+                                  plot_ly(fed_rates, type = 'scatter', mode = 'lines') %>%
+                                           add_trace(x = ~ref_date, y = ~value, name='FED') %>%
+                                           layout(title = 'FED Rates')  
+            
+#https://www.inflation.eu/en/inflation-rates/united-states/historic-inflation/cpi-inflation-united-states.aspx                       
+                                                        
+us_inflation <- read_excel("US_Inflation_Data.xlsx", sheet="Inflation")
+
+                                        plot_ly(us_inflation, type = 'scatter', mode = 'lines') %>%
+                                           add_trace(x = ~Year, y = ~Inflation, name='FED') %>%
+                                           layout(title = 'US Inflation')
+                                        
+                                        
+                                        
+plot_ly() %>%
+    add_trace(data= fed_rates, name="Fed Rates", x = ~ref_date, y = ~value, mode = "lines", type = "scatter") %>%
+    add_trace(data= us_inflation, name="Inflation", x = ~Year, y = ~Inflation, mode = "lines+markers", type = "scatter")  %>%   
+                          layout(title ="FED vs US Inflation")
+                                        
+                                        
+
+
+
+```
+
+
+```{r SP500/GOLD/FED - yfR}
+
+# set options for algorithm
+
+#my_ticker <- 'META'
+my_ticker <- c('^GSPC')
+first_date <- Sys.Date() - 12500
+last_date <- Sys.Date()
+
+# fetch data
+result_SP <- yf_get(tickers = my_ticker, 
+                     first_date = first_date,
+                     last_date = last_date,
+                     freq_data = "weekly")
+
+
+my_ticker <- c('GC=F')
+# fetch data
+result_gold <- yf_get(tickers = my_ticker, 
+                     first_date = first_date,
+                     last_date = last_date,
+                     freq_data = "weekly",
+                     thresh_bad_data = 0.55)
+
+
+df_SPgold <- merge(result_SP, result_gold, by = "ref_date") 
+df_SPgold$KPI <- df_SPgold$price_close.x/df_SPgold$price_close.y
+
+  
+        ggplotly(
+        ggplot(df_SPgold, aes(x=ref_date, y=KPI)) + geom_line()
+        )
+        
+        
+ 
+df_SP_Gold_Fed <- merge(df_SPgold, fed_rates, by = "ref_date")       
+
+ plot_ly(df_SP_Gold_Fed, type = 'scatter', mode = 'lines') %>%
+                                           add_trace(x = ~date, y = ~value, name='FED') %>%
+                                           layout(title = 'Dividend Evolution')  
+
+
+```
 
 
 ```{r gathering enterprises tickers with yfR test + Portfolio combined value - yfR}
@@ -1214,9 +1316,692 @@ df_hist_yield$yield_corrected <- df_hist_yield$div_yield/df_hist_yield$split_c
 
 
 
+```{r YoC - quantmod & yFr & priceR - 1 ticker}
+
+
+
+test_ticker <- c('PEP')
+
+invest = 1000
+
+initial_date="1995-01-01"
+ending_date="2022-01-01"
+
+
+
+#inflation & money input (priceR)
+Year <- (year(initial_date)-1):(year(ending_date)-1) #2000 to 2021
+#nominal_prices <- rnorm(10, mean=10, sd=3)
+nominal_prices <- rep(1,length(Year))
+
+df_inflation <- data.frame(Year, nominal_prices)
+df_inflation$in_2020_dollars_factor <- adjust_for_inflation(nominal_prices, Year, "US", to_date = (year(ending_date)-1)) ###PriceR###
+
+
+
+df_inflation <- mutate(df_inflation,
+                         yearly_inflation = 100*( lag(in_2020_dollars_factor)/in_2020_dollars_factor -1)
+                            )%>% drop_na()
+
+
+df_inflation$money_input_infl <- invest/df_inflation$in_2020_dollars_factor #monthly input corrected by inflation
+
+
+
+
+
+## historical price (yfR)
+
+hist_price <- yf_get(tickers = test_ticker,
+                        first_date= initial_date,
+                        last_date= ending_date,
+                        thresh_bad_data = 0.2,
+                        freq_data="monthly") %>% select(ticker, price_close, ref_date) 
+hist_price$ym <- format(as.Date(hist_price$ref_date), "%Y-%m")
+hist_price$Year <- as.integer(format(as.Date(hist_price$ref_date), "%Y"))
+
+
+       plot_ly(hist_price, type = 'scatter', mode = 'lines')%>%
+                          add_trace(x = ~ym, y = ~price_close, name = ~ticker)
+      
+hist_price_infl <- left_join(hist_price, df_inflation, by=c('Year')) 
+hist_price_infl$Stocks <- hist_price_infl$money_input_infl/hist_price_infl$price_close
+
+
+       plot_ly(hist_price_infl, type = 'bar') %>%
+                          add_trace(x = ~ym, y = ~Stocks, name = ~ticker)  %>%   
+                          layout(title ="Number of stocks that were bought")
+
+       sum(hist_price_infl$money_input_infl)/sum(hist_price_infl$Stocks) #DCA for 1 ticker
+
+## historical divs (yfR)
+divs <- getDividends(test_ticker[1], 
+             from = initial_date,
+             to = ending_date, 
+             src = "yahoo", 
+             auto.assign = TRUE, 
+             auto.update = TRUE, 
+             verbose = FALSE)
+
+
+divs <- data.frame(date=index(divs), coredata(divs))
+colnames(divs) <- c('ref_date','div')
+
+
+
+tail(divs, n =1)$div*4 #current anualized dividend
+tail(divs, n =1)$div*4*sum(hist_price_infl$Stocks) #annual cash flow today
+tail(divs, n =1)$div*4*sum(hist_price_infl$Stocks)/sum(hist_price_infl$money_input_infl)+1 #return div today = YoC
+
+
+(tail(hist_price, n =1)$price_close*sum(hist_price_infl$Stocks)/sum(hist_price_infl$money_input_infl)+1) #capital ret
+(tail(hist_price, n =1)$price_close*sum(hist_price_infl$Stocks)/sum(hist_price_infl$money_input_infl)+1)^(1/(year(ending_date)-year(initial_date))) #capital ret anualized
+
+
+df_95_201x = head(hist_price_infl, n =12*(year(ending_date)-year(initial_date)-7))
+
+                                                                                  #return div on year x = YoC on year x
+tail(divs, n =1)$div*4*sum(df_95_201x$Stocks)/sum(df_95_201x$money_input_infl)+1 #return div today = YoC today
+(tail(df_95_201x, n =1)$price_close*sum(df_95_201x$Stocks)/sum(df_95_201x$money_input_infl)+1)^(1/(year(ending_date)-year(initial_date)))#capital ret anualized on year x
+(tail(hist_price, n =1)$price_close*sum(df_95_201x$Stocks)/sum(df_95_201x$money_input_infl)+1)^(1/(year(ending_date)-year(initial_date)))#capital ret anualized today
+
+
+
+#if buying at the higher price vs the money input corrected by inflation:
+df_95_201x$Stocks <- min(df_95_201x$Stocks)
+tail(divs, n =1)$div*4*sum(df_95_201x$Stocks)/sum(df_95_201x$money_input_infl)+1 #return div today = YoC today
+(tail(hist_price, n =1)$price_close*sum(df_95_201x$Stocks)/sum(df_95_201x$money_input_infl)+1)^(1/(year(ending_date)-year(initial_date)))#capital ret anualized today
+
+```
+
+
+```{r YoC - quantmod & yFr & priceR - multi ticker}
+
+
+
+#test_ticker <- c('JNJ','BHP')
+test_ticker <- c('JNJ','ABT','PG','VFC','O','ABT','PEP','KO','LEG','T','VZ','SWK','TROW','MRK','PFE','INTC','MMM','MCD','BMY','RIO','BHP','O','NKE','CAT','WBA')
+
+invest = 1000/length(unique(test_ticker)) #it will assume that all given tickers are included in the hist_price data frame from the given initial_date (!!!)
+
+#portf_split=length(unique(test_ticker))
+
+
+
+initial_date="1998-01-01"
+ending_date="2022-01-01"
+
+
+
+#inflation & money input (priceR)
+Year <- (year(initial_date)-1):(year(ending_date)-1) #2000 to 2021
+#nominal_prices <- rnorm(10, mean=10, sd=3)
+nominal_prices <- rep(1,length(Year))
+
+df_inflation <- data.frame(Year, nominal_prices)
+df_inflation$in_2020_dollars_factor <- adjust_for_inflation(nominal_prices, Year, "US", to_date = (year(ending_date)-1)) ###PriceR###
+
+
+
+df_inflation <- mutate(df_inflation,
+                         yearly_inflation = 100*( lag(in_2020_dollars_factor)/in_2020_dollars_factor -1)
+                            )%>% drop_na()
+
+
+df_inflation$money_input_infl <- invest/df_inflation$in_2020_dollars_factor #monthly input corrected by inflation
+
+
+
+
+
+## historical price (yfR)
+
+hist_price <- yf_get(tickers = test_ticker,
+                        first_date= initial_date,
+                        last_date= ending_date,
+                        thresh_bad_data = 0.2,
+                        freq_data="monthly") %>% select(ticker, price_close, ref_date) 
+hist_price$ym <- format(as.Date(hist_price$ref_date), "%Y-%m")
+hist_price$Year <- as.integer(format(as.Date(hist_price$ref_date), "%Y"))
+
+
+       plot_ly(hist_price, type = 'scatter', mode = 'lines')%>%
+                          add_trace(x = ~ym, y = ~price_close, name = ~ticker)
+      
+hist_price_infl <- left_join(hist_price, df_inflation, by=c('Year')) 
+hist_price_infl$Stocks <- hist_price_infl$money_input_infl/hist_price_infl$price_close          #no round down
+#                                                                                               #round down
+
+
+       plot_ly(hist_price_infl, type = 'bar')%>%
+                          add_trace(x = ~ym, y = ~Stocks, name = ~ticker)  %>%   
+                          layout(title ="Number of stocks that were bought")
+
+       #sum(hist_price_infl$money_input_infl)/sum(hist_price_infl$Stocks) #DCA for one ticker
+       
+       DCA_df <- setNames(
+          aggregate(hist_price_infl$Stocks, by=list(Category=hist_price_infl$ticker), FUN=sum),  # setNames function
+                       c("ticker", "Stocks"))
+       DCA_df$DCA <- sum(hist_price_infl$money_input_infl)/length(unique(test_ticker))/DCA_df$Stocks
+     
+       
+## historical divs (yfR)
+
+
+divs <- getDividends(test_ticker[1], 
+             from = initial_date,
+             to = ending_date, 
+             src = "yahoo", 
+             auto.assign = TRUE, 
+             auto.update = TRUE, 
+             verbose = FALSE)
+
+
+divs <- data.frame(date=index(divs), coredata(divs))
+colnames(divs) <- c('date','div')
+
+
+
+
+### Divs Evolution ###
+
+divs$ticker <- rep(test_ticker[1],nrow(divs))
+
+
+for(i in 2:length(test_ticker)) {
+
+  aux <- getDividends(test_ticker[i], 
+             from = initial_date,
+             to = ending_date, 
+             src = "yahoo", 
+             auto.assign = TRUE, 
+             auto.update = TRUE, 
+             verbose = FALSE)
+
+
+aux <- data.frame(date=index(aux), coredata(aux))
+colnames(aux) <- c('date','div')
+
+aux$ticker <- rep(test_ticker[i],nrow(aux))
+
+#append
+divs <- rbind(divs, aux)
+ 
+}
+
+
+
+### GROUP BY YEAR & ticker
+
+aggregate(divs$div, by=list(Year_div=year(divs$date)), FUN=sum)
+
+
+divs_agg <- setNames( aggregate(div ~ year(date) + ticker, data = divs, FUN = sum, na.rm = TRUE),
+                    c("Year_div","ticker","div"))
+    
+    
+      #(!!!)
+      length(unique( divs_agg[divs_agg$Year_div== 1998,]$ticker)) < length(unique(test_ticker)) #if true some stocks are missing in the first year selected
+      divs_agg[divs_agg$Year_div== 1998,] %>%
+             filter(!ticker %in% test_ticker)
+      
+      
+      unique( divs_agg[divs_agg$Year_div== 1998,]$ticker)[!(unique( divs_agg[divs_agg$Year_div== 1998,]$ticker) %in% test_ticker)]
+      
+
+
+### Today's Analysis ###
+
+#aggregate(divs_agg$div, by = list(divs_agg$ticker), max) #take the biggest dividend, can provide miss-leading results for non DGI
+#divs_agg %>% group_by(ticker) %>% top_n(1, Year_div) #take the last dividend -> #current dividend
+#hist_price %>% group_by(ticker) %>% top_n(1, ym) #take the last stock value in the market -> #current annualized dividend
+
+      #divs_agg %>% group_by(ticker) %>% top_n(1, Year_div)
+      #divs_agg %>% group_by(ticker) %>% top_n(2, Year_div)
+      #divs_agg[divs_agg$Year_div== 2021,]%>% group_by(ticker)
+
+DCA_df_divs <- left_join(DCA_df, divs_agg[divs_agg$Year_div== 2021,]%>% group_by(ticker), by=c('ticker'='ticker'))       
+#DCA_df_divs <- left_join(DCA_df, divs_agg %>% group_by(ticker) %>% top_n(1, Year_div), by=c('ticker'='ticker')) 
+DCA_df_divs <- left_join(DCA_df_divs, hist_price %>% group_by(ticker) %>% top_n(1, ym), by=c('ticker'='ticker')) 
+
+DCA_df_divs$div_cash_flow <- DCA_df_divs$Stocks*DCA_df_divs$div
+sum(DCA_df_divs$div_cash_flow) #total cash flow today thanks to dividends
+
+
+sum(DCA_df_divs$div_cash_flow)/sum(hist_price_infl$money_input_infl)+1 #return div today = YoC
+
+DCA_df_divs$capital_value <- DCA_df_divs$Stocks*DCA_df_divs$price_close #capital value
+DCA_df_divs$invested <- DCA_df_divs$Stocks*DCA_df_divs$DCA #capital invested
+DCA_df_divs$an_growth <- (DCA_df_divs$capital_value/DCA_df_divs$invested+1)^(1/(year(ending_date)-year(initial_date)))#capital ret anualized today per ticker
+
+(sum(DCA_df_divs$capital_value)/sum(DCA_df_divs$invested)+1)^(1/(year(ending_date)-year(initial_date)))#portfolio capital return anualized (today)
+
+
+
+### Stopping the investment Z years ago ###
+
+
+Z=12
+
+
+#df_95_201x = head(hist_price_infl, n = 12*(year(ending_date)-year(initial_date)-Z)) #for 1 ticker
+
+
+df_95_201x =  data.table(hist_price_infl, key="ticker")
+df_95_201x = df_95_201x[, head(.SD, 12*(year(ending_date)-year(initial_date)-Z) ), by=ticker]
+
+
+
+       DCA_df <- setNames(
+          aggregate(df_95_201x$Stocks, by=list(Category=df_95_201x$ticker), FUN=sum),  # setNames function
+                       c("ticker", "Stocks"))
+       DCA_df$DCA <- sum(df_95_201x$money_input_infl)/DCA_df$Stocks
+
+
+
+
+DCA_df_divs <- left_join(DCA_df, divs_agg %>% group_by(ticker) %>% top_n(1, Year_div), by=c('ticker'='ticker')) 
+DCA_df_divs <- left_join(DCA_df_divs, hist_price %>% group_by(ticker) %>% top_n(1, ym), by=c('ticker'='ticker')) 
+
+DCA_df_divs$div_cash_flow <- DCA_df_divs$Stocks*DCA_df_divs$div
+sum(DCA_df_divs$div_cash_flow) #total cash flow today thanks to dividends       
+sum(DCA_df_divs$div_cash_flow)/sum(hist_price_infl$money_input_infl)+1 #return div today = YoC       
+       
+       
+                                                                                  
+#tail(divs, n =1)$div*4*sum(df_95_201x$Stocks)/sum(df_95_201x$money_input_infl)+1 #return div today = YoC today
+
+
+
+### Stopping the investment Z years ago % Starting after Y years ###
+
+
+Z=12 #if 98 to 2022 ---> investing from 2000 to 2010
+Y=2
+
+
+
+
+df_95_201x =  data.table(hist_price_infl, key="ticker")
+df_95_201x = df_95_201x[, head(.SD, 12*(year(ending_date)-year(initial_date)-Z) ), by=ticker]
+df_9x_201x = df_95_201x[df_95_201x$Year>= 1998+Y,]
+
+
+       DCA_df <- setNames(
+          aggregate(df_9x_201x$Stocks, by=list(Category=df_9x_201x$ticker), FUN=sum),  # setNames function
+                       c("ticker", "Stocks"))
+       DCA_df$DCA <- sum(df_9x_201x$money_input_infl)/DCA_df$Stocks
+
+
+
+
+DCA_df_divs <- left_join(DCA_df, divs_agg %>% group_by(ticker) %>% top_n(1, Year_div), by=c('ticker'='ticker')) 
+DCA_df_divs <- left_join(DCA_df_divs, hist_price %>% group_by(ticker) %>% top_n(1, ym), by=c('ticker'='ticker')) 
+
+DCA_df_divs$div_cash_flow <- DCA_df_divs$Stocks*DCA_df_divs$div
+sum(DCA_df_divs$div_cash_flow) #total cash flow today thanks to dividends       
+sum(DCA_df_divs$div_cash_flow)/sum(hist_price_infl$money_input_infl)+1 #return div today = YoC      
+
+DCA_df_divs$capital_value <- DCA_df_divs$Stocks*DCA_df_divs$price_close #capital value
+DCA_df_divs$invested <- DCA_df_divs$Stocks*DCA_df_divs$DCA #capital invested
+DCA_df_divs$an_growth <- (DCA_df_divs$capital_value/DCA_df_divs$invested+1)^(1/(year(ending_date)-(1998+Y)))*100-100#capital ret anualized today per ticker
+       
+      
+      plot_ly(DCA_df_divs, labels = ~ticker, values = ~div_cash_flow, type = 'pie')%>%   
+                          layout(title ="Split of dividend CF Today")
+      plot_ly(DCA_df_divs, labels = ~ticker, values = ~invested, type = 'pie') %>%   
+                          layout(title ="Split of investment")
+      plot_ly(DCA_df_divs, labels = ~ticker, values = ~capital_value, type = 'pie') %>%   
+                          layout(title ="Split of capital value Today")
+      plot_ly(DCA_df_divs, type = 'bar') %>%
+      add_trace(x = ~ticker, y = ~an_growth, name = 'Anual Growth per Ticker')
+      
+      
+      
+      
+      
+### Trend of YoC over the years, when investing from Y to Z ###      
+      
+      
+      
+      
+historical_yield <- list()
+
+      
+      
+ for ( j in 2010:2020 ) {
+  #divs_agg %>% group_by(ticker) %>% filter( Year_div == j)  
+   #divs_agg %>% group_by(ticker) %>% top_n(1, Year_div)
+   
+   
+
+DCA_df_divs <- left_join(DCA_df, divs_agg %>% group_by(ticker) %>% filter( Year_div == j)  , by=c('ticker'='ticker')) 
+DCA_df_divs <- left_join(DCA_df_divs, hist_price %>% group_by(ticker) %>% top_n(1, ym), by=c('ticker'='ticker')) 
+
+DCA_df_divs$div_cash_flow <- DCA_df_divs$Stocks*DCA_df_divs$div
+sum(DCA_df_divs$div_cash_flow) #total cash flow today thanks to dividends
+
+(sum(DCA_df_divs$div_cash_flow)/sum(hist_price_infl$money_input_infl)+1)*100-100 #return div today = YoC   
+   
+historical_yield <- append(historical_yield, 
+(sum(DCA_df_divs$div_cash_flow)/sum(hist_price_infl$money_input_infl)+1)*100-100)
+   
+ }
+      
+      historical_yield =unlist(historical_yield)
+  yearz =  2010:2020
+  
+  dfz = data.frame(historical_yield,yearz)
+  
+ 
+      
+    
+    plot_ly( dfz, type = 'bar') %>%
+      add_trace(x = ~yearz, y = ~historical_yield, name = 'Portfolio')%>%   
+                          layout(title ="Historical YoC of the Portfolio")
+      
+      
+      
+      
+      
+
+```
+
+
+
+
+```{r YoC - quantmod & yFr & priceR - multi ticker - interactive ready}
+
+
+#test_ticker <- c('JNJ','BHP')
+test_ticker <- c('JNJ','PG','PFE','KO')
+#test_ticker <- c('PG')
+
+
+#length(unique(test_ticker))
+
+invest = 1000 #it will assume that all given tickers are included in the hist_price data frame from the given initial_date (!!!)
+
+
+initial_date="2000-01-01" #year(initial_date)
+ending_date="2022-01-01"
+
+  initial_investment_date <- "2000-01-01"
+  final_investment_date <- "2010-01-01"
+
+
+
+#inflation & money input (priceR)
+Year <- (year(initial_date)-1):(year(ending_date)-1) #2000 to 2021
+#nominal_prices <- rnorm(10, mean=10, sd=3)
+nominal_prices <- rep(1,length(Year))
+
+df_inflation <- data.frame(Year, nominal_prices)
+df_inflation$in_2020_dollars_factor <- adjust_for_inflation(nominal_prices, Year, "US", to_date = (year(ending_date)-1)) ###PriceR###
+
+
+df_inflation <- mutate(df_inflation,
+                         yearly_inflation = 100*( lag(in_2020_dollars_factor)/in_2020_dollars_factor -1)
+                            )%>% drop_na()
+
+
+#To check another sources of inflation:
+#df_inflation_2 <- read_excel("US_Inflation_Data.xlsx", sheet="Inflation")
+#df_inflation_2 <- df_inflation_2[order(df_inflation_2$Year),]
+
+df_inflation$money_input_infl <-invest/length(unique(test_ticker))/df_inflation$in_2020_dollars_factor #monthly input corrected by inflation and already divided by ticker number (!!!) so it assumes that all tickers are available every year considered 
+#Yearly money input inflation corrected per ticker
+
+
+df_inflation$money_input_infl_year <- invest/df_inflation$in_2020_dollars_factor 
+
+
+
+## historical price (yfR)
+
+df_historical <- yf_get(tickers = test_ticker,     ### yfR ###
+                        first_date= initial_date,
+                        last_date= ending_date,
+                        thresh_bad_data = 0.2,
+                        freq_data="monthly") %>% select(ticker, price_close, ref_date) 
+df_historical$ym <- format(as.Date(df_historical$ref_date), "%Y-%m")
+df_historical$Year <- as.integer(format(as.Date(df_historical$ref_date), "%Y"))
+
+
+       plot_ly(df_historical, type = 'scatter', mode = 'lines')%>%
+                          add_trace(x = ~ym, y = ~price_close, name = ~ticker)%>%   
+                          layout(title ="Ticker Value Evolution")
+      
+hist_price_infl <- left_join(df_historical, df_inflation, by=c('Year')) 
+hist_price_infl$Stocks <- hist_price_infl$money_input_infl/hist_price_infl$price_close          #no round down !!!!!!!!
+#                                                                                               #round down
+
+
+       plot_ly(hist_price_infl, type = 'bar')%>%
+                          add_trace(x = ~ym, y = ~Stocks, name = ~ticker)  %>%   
+                          layout(title ="Number of stocks that were bought")
+
+       #sum(hist_price_infl$money_input_infl)/sum(hist_price_infl$Stocks) #DCA for one ticker
+       
+                                                                            
+       
+       #For multi ticker & filtering per the future sliders
+       
+       hist_price_infl_filtered = hist_price_infl[hist_price_infl$Year>= year(initial_investment_date) &
+                       hist_price_infl$Year<= year(final_investment_date)  ,]
+       
+       
+       DCA_df <- setNames(
+          aggregate(hist_price_infl_filtered$Stocks,                  #created with the already filtered hist price & money_input
+                        by=list(Category=hist_price_infl_filtered$ticker),
+                        FUN=sum),  # setNames function
+                       c("ticker", "Stocks"))
+       
+       DCA_df$DCA <- (sum(hist_price_infl_filtered$money_input_infl)/length(unique(test_ticker)))/DCA_df$Stocks
+                                        #all the money invested per ticker               #ticker amount
+     
+       
+### historical divs (yfR)
+
+
+divs <- getDividends(test_ticker[1],  ### QuandMod ###
+             from = initial_date,
+             to = ending_date, 
+             src = "yahoo", 
+             auto.assign = TRUE, 
+             auto.update = TRUE, 
+             verbose = FALSE)
+
+
+divs <- data.frame(date=index(divs), coredata(divs))
+colnames(divs) <- c('date','div')
+
+
+
+
+### Divs Evolution ###
+
+divs$ticker <- rep(test_ticker[1],nrow(divs))
+
+
+for(i in 2:length(test_ticker)) {
+
+  aux <- getDividends(test_ticker[i],  ### QuandMod ###
+             from = initial_date,
+             to = ending_date, 
+             src = "yahoo", 
+             auto.assign = TRUE, 
+             auto.update = TRUE, 
+             verbose = FALSE)
+
+
+aux <- data.frame(date=index(aux), coredata(aux))
+colnames(aux) <- c('date','div')
+
+aux$ticker <- rep(test_ticker[i],nrow(aux))
+
+#append
+divs <- rbind(divs, aux)
+ 
+}
+
+
+
+### GROUP BY YEAR & ticker
+
+divs_agg <- setNames( aggregate(div ~ year(date) + ticker, data = divs, FUN = sum, na.rm = TRUE),
+                    c("Year_div","ticker","div")) ##aggregated per Year & Ticker
+    
+    
+      #(!!!)
+      length(unique( divs_agg[divs_agg$Year_div== year(initial_date),]$ticker)) < length(unique(test_ticker)) #if true some stocks are missing in the first year selected
+      length(unique( divs_agg[divs_agg$Year_div== year(initial_investment_date),]$ticker)) < length(unique(test_ticker))
+      
+      
+
+### Delayed Start&Stop of buying the tickers ###
+
+
+
+DCA_df_divs <- left_join(DCA_df, divs_agg %>% group_by(ticker) %>% top_n(1, Year_div), by=c('ticker'='ticker')) #join to latest values
+#DCA_df_divs <- left_join(DCA_df_divs, hist_price_infl_filtered %>% group_by(ticker) %>% top_n(1, ym), by=c('ticker'='ticker'))#join to latest values 
+
+
+DCA_df_divs$invested <- DCA_df_divs$Stocks*DCA_df_divs$DCA
+DCA_df_divs$div_cash_flow <- DCA_df_divs$Stocks*DCA_df_divs$div
+DCA_df_divs$YoC_Ticker <- ((DCA_df_divs$div_cash_flow)/(DCA_df_divs$invested)+1)*100-100 
+
+
+
+    
+    plot_ly( DCA_df_divs, type = 'bar') %>%
+      add_trace(x = ~ticker, y = ~YoC_Ticker, name = 'Portfolio YoC') %>%   
+                          layout(title = paste("YoC TODAY* per ticker with last buy on ",final_investment_date))
+                                        
+
+
+sum(DCA_df_divs$div_cash_flow) #total cash flow today thanks to dividends       
+(sum(DCA_df_divs$div_cash_flow)/sum(DCA_df_divs$invested)+1)*100-100  #return div TODAY (latest available dividend date) = YoC      
+
+
+#DCA_df_divs$capital_value <- DCA_df_divs$Stocks*DCA_df_divs$price_close #capital value
+#DCA_df_divs$invested <- DCA_df_divs$Stocks*DCA_df_divs$DCA #capital invested
+#DCA_df_divs$an_growth <- (DCA_df_divs$capital_value/DCA_df_divs$invested+1)^(1/(year(ending_date)-(year(initial_date)+Y)))*100-100#capital ret anualized today per ticker
+
+
+
+
+
+      
+historical_yield <- list()
+
+historical_CF <- list()
+
+# j=2021
+# DCA_df_divs <- left_join(DCA_df, divs_agg %>% group_by(ticker) %>% filter( Year_div == j)  , by=c('ticker'='ticker'))
+# DCA_df_divs$div_cash_flow <- DCA_df_divs$Stocks*DCA_df_divs$div
+# (sum(DCA_df_divs$div_cash_flow)/sum(hist_price_infl_filtered[hist_price_infl_filtered$Year <= j ,]$money_input_infl)+1)*100-100
+
+
+ for ( j in 2000:2021 ) {
+  #divs_agg %>% group_by(ticker) %>% filter( Year_div == j)  
+   #divs_agg %>% group_by(ticker) %>% top_n(1, Year_div)
+   
+       
+                                       
+    DCA_df_divs <- left_join(DCA_df, divs_agg %>% group_by(ticker) %>% filter( Year_div == j)  , by=c('ticker'='ticker')) 
+    #DCA_df_divs <- left_join(DCA_df_divs, hist_price %>% group_by(ticker) %>% top_n(1, ym), by=c('ticker'='ticker')) 
+    
+    DCA_df_divs$div_cash_flow <- DCA_df_divs$Stocks*DCA_df_divs$div
+    #print(sum(DCA_df_divs$div_cash_flow)) #total cash flow today thanks to dividends
+    
+    #(sum(DCA_df_divs$div_cash_flow)/sum(hist_price_infl$money_input_infl)+1)*100-100 #return div today = YoC   
+       
+    historical_yield <- append(
+          historical_yield, 
+          (sum(DCA_df_divs$div_cash_flow)/sum(hist_price_infl_filtered[hist_price_infl_filtered$Year <= j ,]$money_input_infl)+1)*100-100
+    )
+    
+       historical_CF <- append(
+          historical_CF, 
+          sum(DCA_df_divs$div_cash_flow)
+        )
+       
+       
+    #rint(j)
+    #divide the cash flow of the year looped vs all the moneyinputed until that year looped
+    #print((sum(DCA_df_divs$div_cash_flow)/sum(hist_price_infl_filtered[hist_price_infl_filtered$Year <= j #,]$money_input_infl)+1)*100-100)
+ }
+      
+  historical_yield =unlist(historical_yield)
+  historical_CF =unlist(historical_CF)
+  yearz =  2000:2021
+  
+  dfz = data.frame(historical_yield,historical_CF,yearz)
+  
+  
+  
+     plot_ly( dfz, type = 'bar') %>%
+      add_trace(x = ~yearz, y = ~historical_yield, name = 'Portfolio YoC') %>%   
+                          layout(title ="Historical YoC of the Portfolio")
+     
+  
+     plot_ly( dfz, type = 'bar') %>%
+      add_trace(x = ~yearz, y = ~historical_CF, name = 'Portfolio CF') %>%   
+                          layout(title ="Historical CF of the Portfolio")
+    
+    plot_ly() %>% 
+          add_trace(data= dfz, x = ~yearz, y = ~historical_CF, name = "Portfolio CF", type = "bar") %>%
+          add_trace(data= aggregate(money_input_infl ~ Year, data = hist_price_infl_filtered, FUN = sum), name="Monetary Input", x = ~Year, y = ~money_input_infl, mode = "lines+markers", type = "scatter") %>%   
+                          layout(title ="Historical CF vs Monetary Input")
+     
+     
+
+ay <- list(
+  tickfont = list(color = "red"),
+  overlaying = "y",
+  side = "right",
+  title = "<b>$</b> invested")
+
+plot_ly() %>% 
+          add_trace(data= dfz, x = ~yearz, y = ~historical_yield, name = "historical yield", type = "bar") %>%
+          add_trace(data= aggregate(money_input_infl ~ Year, data = hist_price_infl_filtered, FUN = sum), name="Monetary_input", x = ~Year, y = ~money_input_infl, yaxis = "y2", mode = "lines+markers", type = "scatter")  %>%
+          layout(
+                title = "Historical YoC of the Portfolio vs Monetary input", yaxis2 = ay,
+                xaxis = list(title="Year"),
+                yaxis = list(title="<b>%</b> YoC")
+          )%>%
+         layout(plot_bgcolor='#e5ecf6',
+              xaxis = list(
+                zerolinecolor = '#ffff',
+                zerolinewidth = 2,
+                gridcolor = 'ffff'),
+              yaxis = list(
+                zerolinecolor = '#ffff',
+                zerolinewidth = 2,
+                gridcolor = 'ffff')
+          ) 
+
+
+
+
+   
+```
+
+
+```{r Yield on Buy}
+
+## Given tickers and buy dates, provide the avg yield per ticker on the moment of buy
+
+
+
+
+```
+
+
 ```{r export data}
 
-#Save data locally to work offline and avoid distractions
+
 
 
 ```

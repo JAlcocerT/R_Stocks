@@ -2,6 +2,9 @@
 
 * The analysys Rmd - [R_Stocks_Analysis.Rmd](https://github.com/JAlcocerT/R_Stocks/blob/main/R_Stocks_Analysis.Rmd)
 * The final interactive dashboard - [R_Stocks_Shiny.Rmd](https://github.com/JAlcocerT/R_Stocks/blob/main/R_Stocks_Shiny.Rmd)
+    * Stocks Analysis: yfR
+    * Dividend Analysis: yfR, QuantMod, PriceR, QuandDl (optional)
+    * Portfolio Analysis: yfR, QuantMod, PriceR
 
 ### Powered thanks to:
 #### Data Sources

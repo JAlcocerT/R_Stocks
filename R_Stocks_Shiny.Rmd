@@ -60,28 +60,6 @@ editor_options:
 #install.packages("pacman")
 pacman::p_load(dplyr,dtplyr, shiny, shinythemes,shinyWidgets,readxl,scales,tidyverse,DT,ggthemes,ggplot2,plotly,plyr,leaflet,devtools,yaml)
 
-
-# Get your API key from quandl.com and include it on a 'config.yaml' file
-vars = yaml.load_file("config.yml")
-quandl_api = vars$config$quandl_api
- 
-# Add the key to the Quandl keychain
-Quandl.api_key(quandl_api)
-
-
-
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-#setwd("C:/Users/your/windows/path")
-setwd("C:/Users/Jesus Alcocer/OneDrive - EPAM/MIO/Yosus")
-getwd()
-
-
-
-
-```
-
-```{r libraries}
-
 #library("BatchGetSymbols") #depricated --->yfR
 
 library("yfR") #historical stock valuation -> Instead of BatchGetSymbols
@@ -111,7 +89,24 @@ library(shinyWidgets)
 library(DT)
 
 
+
+# Get your API key from quandl.com and include it on a 'config.yaml' file
+vars = yaml.load_file("config.yml")
+quandl_api = vars$config$quandl_api
+ 
+# Add the key to the Quandl keychain
+Quandl.api_key(quandl_api)
+
+
+
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+#setwd("C:/Users/your/windows/path")
+
+
+
+
 ```
+
 
 ```{r Portfolio read from excel}
 
@@ -130,16 +125,21 @@ my_portfolio <- na.omit(my_portfolio)
 ```{r Portfolio read from excel}
 
 #test_ticker <- my_portfolio$Ticker
-#test_ticker <- c('NKE','PG','JNJ')
-test_ticker <- c('JNJ','ABT','PG','VFC','O','ABT','PEP','KO','LEG','AMT','MO','BLK','ABBV','T','VZ','SWK','TROW','MRK','PFE','INTC','MMM','MCD','BMY','EPD','RIO','NKE','CAT','WBA','tak','mc.pa','t.to','tyo.4502','CL') 
+test_ticker <- c('KO','PG','JNJ','PFE','INTC','MMM','MCD')
+# test_ticker <- c('JNJ','ABT','PG','VFC','BLK','ABBV','T','VZ','SWK','TROW','MRK','PFE','INTC','MMM','MCD','BMY','EPD','RIO','NKE','CAT','WBA','tak','mc.pa','t.to','tyo.4502','CL') 
 
 ```
 
 ```{r Data query - yfr & quantmod & quandl & PriceR}
 
 
+
+initial_date="1990-01-01" #year(initial_date)
+ending_date="2022-01-01"
+
+
 ##### tabpanel -> Stock Analysis ##### 
-      df_historical <- yf_get(tickers = test_ticker,
+      df_historical <- yf_get(tickers = test_ticker,          ### yfr ###
                               first_date= "1960-01-01",
                               last_date= Sys.Date()-1,
                               thresh_bad_data = 0.2,
@@ -147,7 +147,7 @@ test_ticker <- c('JNJ','ABT','PG','VFC','O','ABT','PEP','KO','LEG','AMT','MO','B
       
 ##### tabpanel -> Dividend Analysis ##### 
 
-      divs <- getDividends(test_ticker[1], 
+      divs <- getDividends(test_ticker[1],                   ### QuandMod ###
                    from = "1960-01-01",
                    to = Sys.Date()-1, 
                    src = "yahoo", 
@@ -262,6 +262,25 @@ test_ticker <- c('JNJ','ABT','PG','VFC','O','ABT','PEP','KO','LEG','AMT','MO','B
         df1_quandl$payoutratio = df1_quandl$dps/df1_quandl$eps
         df1_quandl$debt_assets = df1_quandl$debt/df1_quandl$assets
 
+        
+
+##### tabpanel -> Portfolio Analysis ##### 
+        
+        
+#inflation & money input (priceR)
+Year <- (year(initial_date)-1):(year(ending_date)-1) #2000 to 2021
+nominal_prices <- rep(1,length(Year))
+
+df_inflation <- data.frame(Year, nominal_prices)
+df_inflation$in_2020_dollars_factor <- adjust_for_inflation(nominal_prices, Year, "US", to_date = (year(ending_date)-1)) ###PriceR###
+
+
+df_inflation <- mutate(df_inflation,
+                         yearly_inflation = 100*( lag(in_2020_dollars_factor)/in_2020_dollars_factor -1)
+                            )%>% drop_na()
+        
+        
+        
 
 ##### tabpanel -> Indexes ##### 
 
@@ -308,7 +327,7 @@ test_ticker <- c('JNJ','ABT','PG','VFC','O','ABT','PEP','KO','LEG','AMT','MO','B
 ```
 
 
-```{r dashboard interactive v2}
+```{r dashboard interactive v3}
 
 min_year = 1962
 max_year = 2022
@@ -416,6 +435,49 @@ if (interactive()) {
                       ) #end main panel (dividend analysis)
            )
        ), #dividend analysis tab panel end ###
+         tabPanel("Portfolio Analysis", 
+                     sidebarLayout(
+               sidebarPanel(width = 3, 
+                         
+                            sliderInput("years_portf",
+                                        label = h3("Years investing"),
+                                        min = min_year, max = max_year-1, value = c(2000, 2021)),
+                            sliderInput("year_yoc",
+                                "YoC looking from the year (TODAY*)",
+                                min = min_year, max = max_year-1, value = 2021,width = "90%"),
+                            sliderInput("money_in_portf",
+                                "Monetary input - Monthly (value of 2021)",
+                                min = 100, max = 5000, value = 1000,width = "90%"),
+                            selectInput(
+                                        'selected_tickers_portf',
+                                        'Tickers',
+                                        test_ticker,
+                                        selected = c('KO','PG','JNJ','PFE'),
+                                        multiple = TRUE,
+                                        selectize = TRUE,
+                                        width = NULL,
+                                        size = NULL
+                                      ),
+                            
+                            
+                           ),
+
+               mainPanel(
+                       fluidRow(
+                            column(12,
+                              h1('Cash flow analysis - No dividend re-investment', align = "center"),
+                              plotlyOutput("YoC"),
+                              plotlyOutput('Div_CF'),
+                              plotlyOutput('Stocks_bought'),
+                              plotlyOutput('YoC_hist'),
+                              plotlyOutput('CF_hist'),
+                              DTOutput('DCA_DF'),
+                                )
+                              )
+                      ) #end main panel (currencies)
+           ) #end sidebarLayout (currencies)
+     
+                 ), #tab panel end (Portfolio Analysis)
        tabPanel("Indexes", h1("New tab") ),
        tabPanel("Commodities", h1("New tab") ),
        tabPanel("Currencies", 
@@ -664,6 +726,198 @@ if (interactive()) {
                     ) %>%
                           layout(title = 'Debt/Assets Evolution')
             })
+            
+            
+              
+      ##### tabpanel -> Portfolio Analysis ##### 
+             ### Dataframes ### 
+            
+            hist_price_infl_filtered_interactive <- reactive ({
+              # 
+              # df_inflation$money_input_infl <-input$money_in_portf/df_inflation$in_2020_dollars_factor
+              #   df_inflation$money_input_infl_year <-  length(unique(input$selected_tickers_portf))*input$money_in_portf/df_inflation$in_2020_dollars_factor 
+                
+                
+                
+df_inflation$money_input_infl <-input$money_in_portf/length(unique(input$selected_tickers_portf))/df_inflation$in_2020_dollars_factor 
+df_inflation$money_input_infl_year <- input$money_in_portf/df_inflation$in_2020_dollars_factor 
+                
+                
+                df_historical$Year <- as.integer(format(as.Date(df_historical$ref_date), "%Y"))
+                
+                hist_price_infl <- left_join(df_historical, df_inflation, by=c('Year')) 
+                hist_price_infl$Stocks <- hist_price_infl$money_input_infl/hist_price_infl$price_close          #no round down !!!!!!!!
+                
+                hist_price_infl_filtered = hist_price_infl[hist_price_infl$Year>= input$years_portf[1] &
+                                       hist_price_infl$Year<= input$years_portf[2]  
+                                       & hist_price_infl$ticker %in% input$selected_tickers_portf ,]      
+                return(hist_price_infl_filtered)
+              
+            })
+            
+            
+            DCA_df_interactive <- reactive ({
+              
+               DCA_df <- setNames(
+                          aggregate(hist_price_infl_filtered_interactive()$Stocks,            
+                        by=list(Category=hist_price_infl_filtered_interactive()$ticker),
+                        FUN=sum),  # setNames function
+                       c("ticker", "Stocks"))
+                    
+                     
+       DCA_df$DCA <- (sum(hist_price_infl_filtered_interactive()$money_input_infl)/length(unique(input$selected_tickers_portf)))/DCA_df$Stocks
+                                       
+              
+              return(DCA_df)
+              
+            })
+            
+            
+            DCA_df_divs_interactive  <- reactive ({
+                                            
+        
+        DCA_df_divs <- left_join(DCA_df_interactive(), divs_agg[divs_agg$Year_div== input$year_yoc,]%>% group_by(ticker), by=c('ticker'='ticker')) #join to latest values
+        
+        #DCA_df_divs <- left_join(DCA_df_divs, hist_price_infl_filtered %>% group_by(ticker) %>% top_n(1, ym), by=c('ticker'='ticker'))#join to latest values 
+        
+        
+        DCA_df_divs$invested <- DCA_df_divs$Stocks*DCA_df_divs$DCA
+        DCA_df_divs$div_cash_flow <- DCA_df_divs$Stocks*DCA_df_divs$div
+        DCA_df_divs$YoC_Ticker <- ((DCA_df_divs$div_cash_flow)/(DCA_df_divs$invested)+1)*100-100 
+        
+            
+          return( 
+           DCA_df_divs 
+                  )
+        })
+            
+            
+            
+            
+            dfz_interactive <-reactive({
+              
+              
+            historical_yield <- list()
+            historical_CF <- list()
+            
+            
+             for ( j in input$years_portf[1]:input$years_portf[2] ) {
+                   
+                                                   
+                DCA_df_divs <- left_join(DCA_df_interactive(), divs_agg %>% group_by(ticker) %>% filter( Year_div == j)  , by=c('ticker'='ticker')) 
+                
+                DCA_df_divs$div_cash_flow <- DCA_df_divs$Stocks*DCA_df_divs$div
+                   
+                
+                historical_yield <- append(
+                      historical_yield, 
+                      (sum(DCA_df_divs$div_cash_flow)/sum(hist_price_infl_filtered_interactive()[hist_price_infl_filtered_interactive()$Year <= j ,]$money_input_infl)+1)*100-100
+                )
+                
+                
+                 historical_CF <- append(
+                    historical_CF, 
+                    sum(DCA_df_divs$div_cash_flow)
+                  )
+       
+                   
+             }
+                  
+              historical_yield =unlist(historical_yield)
+              
+              historical_CF =unlist(historical_CF)
+              yearz =  input$years_portf[1]:input$years_portf[2]
+              
+              dfz = data.frame(historical_yield,historical_CF,yearz)
+              return(dfz)
+              
+            })
+            
+            
+            ### TABLES ###
+            
+            output$DCA_DF = renderDT(DCA_df_divs_interactive())
+            
+            ### GRAPHS ###
+            
+         
+            
+            
+              output$YoC <-renderPlotly({
+                
+    plot_ly( DCA_df_divs_interactive(), type = 'bar') %>%
+      add_trace(x = ~ticker, y = ~YoC_Ticker, name = 'Portfolio YoC') %>%   
+                          layout(title = paste("YoC TODAY* per ticker with last buy on ",input$years_portf[2]))
+                       
+               
+                
+                
+                
+                      })
+              
+              
+                 output$Stocks_bought <- renderPlotly({
+              
+              
+                     plot_ly(hist_price_infl_filtered_interactive(), type = 'bar')%>%
+                                        add_trace(x = ~ym, y = ~Stocks, name = ~ticker)  %>%   
+                                        layout(title ="Number of stocks that were bought")
+              
+            })
+            
+            output$Div_CF <-renderPlotly({
+                
+    plot_ly(DCA_df_divs_interactive(), labels = ~ticker, values = ~div_cash_flow, type = 'pie')%>% 
+                layout(title = 'Dividend Cash Flow split TODAY*',
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
+         )
+            })
+            
+            
+            
+               output$YoC_hist <- renderPlotly({
+
+                  ay <- list(
+                    tickfont = list(color = "red"),
+                    overlaying = "y",
+                    side = "right",
+                    title = "<b>$</b> invested")
+
+                  plot_ly() %>%
+                            add_trace(data= dfz_interactive(), x = ~yearz, y = ~historical_yield, name = "Portfolio Historical Yield", type = "bar") %>%
+                            add_trace(data= aggregate(money_input_infl ~ Year, data = hist_price_infl_filtered_interactive(), FUN = sum), name="Monetary Input", x = ~Year, y = ~money_input_infl, yaxis = "y2", mode = "lines+markers", type = "scatter")  %>%
+                            layout(
+                                  title = "Historical YoC of the Portfolio vs Monetary input", yaxis2 = ay,
+                                  xaxis = list(title="Year"),
+                                  yaxis = list(title="<b>%</b> YoC")
+                            )%>%
+                           layout(plot_bgcolor='#e5ecf6',
+                                xaxis = list(
+                                  zerolinecolor = '#ffff',
+                                  zerolinewidth = 2,
+                                  gridcolor = 'ffff'),
+                                yaxis = list(
+                                  zerolinecolor = '#ffff',
+                                  zerolinewidth = 2,
+                                  gridcolor = 'ffff')
+                            )
+                 
+               })
+               
+               
+               
+                output$CF_hist <- renderPlotly({
+
+                 
+            plot_ly() %>% 
+                  add_trace(data= dfz_interactive(), x = ~yearz, y = ~historical_CF, name = "Portfolio CF", type = "bar") %>%
+                  add_trace(data= aggregate(money_input_infl ~ Year, data = hist_price_infl_filtered_interactive(), FUN = sum), name="Monetary Input", x = ~Year, y = ~money_input_infl, mode = "lines+markers", type = "scatter") %>%   
+                                  layout(title ="Historical CF vs Monetary Input")
+        
+                         
+                 
+               })
               
            
         ##### tabpanel -> Currencies ##### 
