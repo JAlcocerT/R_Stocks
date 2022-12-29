@@ -1,0 +1,2 @@
+config:
+ quandl_api : your_API_key
