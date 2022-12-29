@@ -140,7 +140,7 @@ df0_quandl <- Quandl("WIKI/KO")
 
 #df1_quandl <- Quandl.datatable('SHARADAR/SF1', ticker='AAPL')
 df1_quandl <- Quandl.datatable('SHARADAR/SF1',
-                               ticker=c('AAPL','PG'), 
+                               ticker=c('INTC','TXN'), 
                                calendardate.gte='2000-12-31',
                                qopts.columns=c('ticker' ,'debt','assets','calendardate','payoutratio','grossmargin','ebitdamargin','ev','evebit','evebitda'))
 
@@ -497,7 +497,8 @@ last_date <- Sys.Date() -1
 
 if(Manually_define_tickers==1){
   
-   my_ticker<- c('PG','JNJ','KO','INTC','GC=F','^GSPC')
+   #my_ticker<- c('PG','JNJ','KO','INTC','GC=F','^GSPC')
+   my_ticker<- c('TXN','INTC')
    
 }else{
   
@@ -514,7 +515,7 @@ if(Manually_define_tickers==1){
 
 
 # get data for all enterprises
-result_aux <- yf_get(tickers = my_ticker,
+result_aux <- yf_get(tickers = my_ticker,                    ### yfR ###
                         first_date=first_date,
                         last_date=last_date,
                         freq_data="weekly")
@@ -524,9 +525,12 @@ df_tickers <- result_aux %>% select(ticker, price_close, ref_date)
     
     #ggplot(subset(df_tickers,ticker!="AMZN"), aes(x=ref_date, y=price_close, group=ticker)) + geom_line(aes(colour = ticker))
     
-    ggplotly(
-    ggplot(df_tickers, aes(x=ref_date, y=price_close, group=ticker)) + geom_line(aes(colour = ticker))
-    )
+    # ggplotly(
+    # ggplot(df_tickers, aes(x=ref_date, y=price_close, group=ticker)) + geom_line(aes(colour = ticker))
+    # )
+
+     plot_ly(df_tickers, type = 'scatter', mode = 'lines')%>%
+      add_trace(x = ~ref_date, y = ~price_close, name = ~ticker)
 
 ```
 

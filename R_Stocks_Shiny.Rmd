@@ -108,7 +108,7 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 ```
 
 
-```{r Portfolio read from excel}
+```{r Portfolio - read from excel}
 
 # set as direction the one of .Rmd archive; .xlsx and .Rmd mut be on same folder
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -122,10 +122,13 @@ my_portfolio <- na.omit(my_portfolio)
 
 ```
 
-```{r Portfolio read from excel}
+```{r Portfolio - read from list}
+
+#NASDAQ:TXN ---> TXN in yahoo finance
+#NYSE:PG ---> PG...
 
 #test_ticker <- my_portfolio$Ticker
-test_ticker <- c('KO','PG','JNJ','PFE','INTC','MMM','MCD')
+test_ticker <- c('KO','PG','JNJ','PFE','INTC','MMM','MCD','TXN')
 # test_ticker <- c('JNJ','ABT','PG','VFC','BLK','ABBV','T','VZ','SWK','TROW','MRK','PFE','INTC','MMM','MCD','BMY','EPD','RIO','NKE','CAT','WBA','tak','mc.pa','t.to','tyo.4502','CL') 
 
 ```
@@ -135,21 +138,23 @@ test_ticker <- c('KO','PG','JNJ','PFE','INTC','MMM','MCD')
 
 
 initial_date="1990-01-01" #year(initial_date)
-ending_date="2022-01-01"
+ending_date="2022-12-28"
 
 
 ##### tabpanel -> Stock Analysis ##### 
       df_historical <- yf_get(tickers = test_ticker,          ### yfr ###
-                              first_date= "1960-01-01",
-                              last_date= Sys.Date()-1,
+                              #first_date= "1960-01-01",
+                              #last_date= Sys.Date()-1,
+                              first_date= initial_date,
+                              last_date= ending_date,
                               thresh_bad_data = 0.2,
                               freq_data="monthly") %>% select(ticker, price_close, ref_date)
       
 ##### tabpanel -> Dividend Analysis ##### 
 
       divs <- getDividends(test_ticker[1],                   ### QuandMod ###
-                   from = "1960-01-01",
-                   to = Sys.Date()-1, 
+                   from = initial_date,
+                   to = ending_date, 
                    src = "yahoo", 
                    auto.assign = TRUE, 
                    auto.update = TRUE, 
@@ -168,8 +173,8 @@ ending_date="2022-01-01"
       for(i in 2:length(test_ticker)) {
       
         aux <- getDividends(test_ticker[i], 
-                   from = "1960-01-01",
-                   to = Sys.Date()-10, 
+                   from = initial_date,
+                   to = ending_date, 
                    src = "yahoo", 
                    auto.assign = TRUE, 
                    auto.update = TRUE, 
@@ -329,8 +334,12 @@ df_inflation <- mutate(df_inflation,
 
 ```{r dashboard interactive v3}
 
-min_year = 1962
-max_year = 2022
+#min_year = 1962
+#max_year = 2022
+
+min_year = year(initial_date)
+max_year = year(ending_date)
+
 
 #library(rstudio/shiny)
 

@@ -6,6 +6,10 @@
     * Dividend Analysis: yfR, QuantMod, PriceR, QuandDl (optional)
     * Portfolio Analysis: yfR, QuantMod, PriceR
 
+## RoadMap
+
+Add Re-Investment capability
+
 ### Powered thanks to:
 #### Data Sources
 * <https://github.com/ropensci/yfR>
