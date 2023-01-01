@@ -128,7 +128,7 @@ my_portfolio <- na.omit(my_portfolio)
 #NYSE:PG ---> PG...
 
 #test_ticker <- my_portfolio$Ticker
-test_ticker <- c('KO','PG','JNJ','PFE','INTC','MMM','MCD','TXN')
+test_ticker <- c('KO','PG','JNJ','PFE','INTC','MMM','MCD','TXN','XOM')
 # test_ticker <- c('JNJ','ABT','PG','VFC','BLK','ABBV','T','VZ','SWK','TROW','MRK','PFE','INTC','MMM','MCD','BMY','EPD','RIO','NKE','CAT','WBA','tak','mc.pa','t.to','tyo.4502','CL') 
 
 ```

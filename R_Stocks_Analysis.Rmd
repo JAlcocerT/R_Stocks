@@ -107,6 +107,7 @@ getSymbols("mc.pa") #LVMH
 
 
 
+
 quantmod::getSymbols('PG')
 
 getSymbols.yahooj('TYO')
@@ -139,10 +140,18 @@ df0_quandl <- Quandl("WIKI/KO")
 
 
 #df1_quandl <- Quandl.datatable('SHARADAR/SF1', ticker='AAPL')
+
 df1_quandl <- Quandl.datatable('SHARADAR/SF1',
+                               ticker=c('PG','TXN'),
+                               calendardate.gte='2000-12-31',
+                               )
+
+df1_quandl <- Quandl.datatable('SHARADAR/SF1',                        ### quandl ###
                                ticker=c('INTC','TXN'), 
                                calendardate.gte='2000-12-31',
-                               qopts.columns=c('ticker' ,'debt','assets','calendardate','payoutratio','grossmargin','ebitdamargin','ev','evebit','evebitda'))
+                               qopts.columns=c('ticker' ,'debt','assets','calendardate','payoutratio','grossmargin','ebitdamargin','ev','evebit','evebitda','pe','assetturnover','eps','fcf','netmargin','roa','roe','roic','ros'))
+
+
 
 
 
@@ -152,6 +161,45 @@ df1_quandl$payoutratio = df1_quandl$dps/df1_quandl$eps
 df1_quandl$debt_assets = df1_quandl$debt/df1_quandl$assets
 
 
+plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~calendardate, y = ~ros, name = ~ticker)%>%
+        layout(title = 'ros')
+
+plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~calendardate, y = ~roic, name = ~ticker)%>%
+        layout(title = 'roic')
+
+plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~calendardate, y = ~roa, name = ~ticker)%>%
+        layout(title = 'roa')
+
+plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~calendardate, y = ~netmargin, name = ~ticker)%>%
+        layout(title = 'netmargin')
+
+plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~calendardate, y = ~fcf, name = ~ticker)%>%
+        layout(title = 'Free Cash Flow - FCF')
+
+plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~calendardate, y = ~eps, name = ~ticker)%>%
+        layout(title = 'Earning per Share - EPS')
+
+plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~calendardate, y = ~assetturnover, name = ~ticker)%>%
+        layout(title = 'assetturnover')
+
+plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~calendardate, y = ~assetturnover, name = ~ticker)%>%
+        layout(title = 'assetturnover')
+
+plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~calendardate, y = ~assetturnover, name = ~ticker)%>%
+        layout(title = 'assetturnover')
+
+plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~calendardate, y = ~pe, name = ~ticker)%>%
+        layout(title = 'PE')
 
 plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
                     add_trace(x = ~calendardate, y = ~100*divyield, name = ~ticker)%>%
