@@ -54,6 +54,14 @@ install.packages(c("tibble", "dplyr","writexl","shiny","shinythemes","shinyWidge
 ```{r Load the libraries & Config file}
 
 
+
+#setwd('C:/Users')
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) #this Rmd file must be saved
+
+
+
+vars = yaml.load_file("config.yml")
+quandl_api = vars$config$quandl_api
 #library('data.table')
 
 #install.packages("pacman")
@@ -79,16 +87,10 @@ library("rstudioapi")
 
 library(rstudioapi) #to manage the directory
 
-#setwd('C:/Users')
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) #this Rmd file must be saved
-setwd('C:/Users/Jesus Alcocer/Desktop/GH/R_Stocks')
 
 #setwd("C:/Users/your/windows/path")
 getwd()
 
-
-vars = yaml.load_file("config.yml")
-quandl_api = vars$config$quandl_api
 
 
 ```
@@ -115,6 +117,29 @@ getSymbols.yahooj('TYO')
 
 ```
 
+```{r Portfolio - read from excel}
+
+# set as direction the one of .Rmd archive; .xlsx and .Rmd mut be on same folder
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+  
+my_portfolio <- read_excel("Portfolio.xlsx", sheet="portfolio1")
+
+# clear empty cells in my_data; overwrite it
+my_portfolio <- na.omit(my_portfolio)
+
+
+
+```
+
+```{r Portfolio - read from list}
+
+#NASDAQ:TXN ---> TXN in yahoo finance
+#NYSE:PG ---> PG...
+
+test_ticker <- my_portfolio$Ticker
+#test_ticker <- c('KO','PG','JNJ','PFE','INTC','MMM','MCD','TXN','XOM','BLK','TROW')
+
+```
 
 ```{r test - quandl}
 #https://github.com/quandl/quandl-r
@@ -152,10 +177,26 @@ df1_quandl <- Quandl.datatable('SHARADAR/SF1',                        ### quandl
                                qopts.columns=c('ticker' ,'debt','assets','calendardate','payoutratio','grossmargin','ebitdamargin','ev','evebit','evebitda','pe','assetturnover','eps','fcf','netmargin','roa','roe','roic','ros'))
 
 
+test_ticker <- sub("NASDAQ:", "", test_ticker)
+test_ticker <- sub("NYSE:", "", test_ticker)
+
+
+df1_quandl <- Quandl.datatable('SHARADAR/SF1',                        ### quandl ###
+                               ticker=test_ticker, 
+                               calendardate.gte='2000-12-31',
+                               qopts.columns=c('ticker' ,'debt','assets','calendardate','payoutratio','grossmargin','ebitdamargin','ev','evebit','evebitda','pe','assetturnover','eps','fcf','netmargin','roa','roe','roic','ros'), paginate = TRUE)
+
+
 
 
 
 df1_quandl <- Quandl.datatable("SHARADAR/SF1", paginate = TRUE) #eps #dps #gross_margin #div_yield #debt #assets #ebitda #ev #ebitdamargin #...
+
+# test_ticker <- sub("NASDAQ:", "", test_ticker)
+# test_ticker <- sub("NYSE:", "", test_ticker)
+# 
+# df1_quandl <- filter(df1_quandl[df1_quandl$ticker %in% test_ticker ,])
+
 
 df1_quandl$payoutratio = df1_quandl$dps/df1_quandl$eps
 df1_quandl$debt_assets = df1_quandl$debt/df1_quandl$assets
@@ -163,7 +204,7 @@ df1_quandl$debt_assets = df1_quandl$debt/df1_quandl$assets
 
 plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
                     add_trace(x = ~calendardate, y = ~ros, name = ~ticker)%>%
-        layout(title = 'ros')
+        layout(title = 'ROS')
 
 plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
                     add_trace(x = ~calendardate, y = ~roic, name = ~ticker)%>%
@@ -232,6 +273,9 @@ plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
     )
   ) %>%
         layout(title = 'Debt/Assets Evolution')
+
+
+### ROE Estimation with ROA + Debt/Assets Ratio
 
 
 

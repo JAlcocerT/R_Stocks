@@ -55,6 +55,19 @@ editor_options:
 ```{r Load the libraries}
 
 
+
+
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+#setwd("C:/Users/your/windows/path")
+
+# Get your API key from quandl.com and include it on a 'config.yaml' file
+vars = yaml.load_file("config.yml")
+quandl_api = vars$config$quandl_api
+ 
+# Add the key to the Quandl keychain
+Quandl.api_key(quandl_api)
+
+
 #library('data.table')
 
 #install.packages("pacman")
@@ -88,22 +101,7 @@ library(shinyWidgets)
 
 library(DT)
 
-
-
-# Get your API key from quandl.com and include it on a 'config.yaml' file
-vars = yaml.load_file("config.yml")
-quandl_api = vars$config$quandl_api
- 
-# Add the key to the Quandl keychain
-Quandl.api_key(quandl_api)
-
-
-
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-#setwd("C:/Users/your/windows/path")
-
-
-
+getwd()
 
 ```
 
@@ -128,7 +126,7 @@ my_portfolio <- na.omit(my_portfolio)
 #NYSE:PG ---> PG...
 
 #test_ticker <- my_portfolio$Ticker
-test_ticker <- c('KO','PG','JNJ','PFE','INTC','MMM','MCD','TXN','XOM')
+test_ticker <- c('KO','PG','JNJ','PFE','INTC','MMM','MCD','TXN','XOM','BLK','TROW')
 # test_ticker <- c('JNJ','ABT','PG','VFC','BLK','ABBV','T','VZ','SWK','TROW','MRK','PFE','INTC','MMM','MCD','BMY','EPD','RIO','NKE','CAT','WBA','tak','mc.pa','t.to','tyo.4502','CL') 
 
 ```
@@ -137,8 +135,8 @@ test_ticker <- c('KO','PG','JNJ','PFE','INTC','MMM','MCD','TXN','XOM')
 
 
 
-initial_date="1990-01-01" #year(initial_date)
-ending_date="2022-12-28"
+initial_date="2000-01-01" #year(initial_date)
+ending_date="2022-12-31"
 
 
 ##### tabpanel -> Stock Analysis ##### 
@@ -261,8 +259,7 @@ ending_date="2022-12-28"
       df1_quandl <- Quandl.datatable('SHARADAR/SF1',
                                ticker=test_ticker, 
                                calendardate.gte='2000-12-31',
-                               qopts.columns=c('ticker','debt','assets','calendardate',
-                                               'payoutratio','grossmargin','ebitdamargin','ev','evebit','evebitda'))
+                              qopts.columns=c('ticker' ,'debt','assets','calendardate','payoutratio','grossmargin','ebitdamargin','ev','evebit','evebitda','pe','assetturnover','eps','fcf','netmargin','roa','roe','roic','ros'), paginate = TRUE)
 
         df1_quandl$payoutratio = df1_quandl$dps/df1_quandl$eps
         df1_quandl$debt_assets = df1_quandl$debt/df1_quandl$assets
@@ -332,7 +329,7 @@ df_inflation <- mutate(df_inflation,
 ```
 
 
-```{r dashboard interactive v3}
+```{r dashboard interactive v4}
 
 #min_year = 1962
 #max_year = 2022
@@ -379,7 +376,20 @@ if (interactive()) {
                             column(12,
                             
                               h1('yfR', align = "center"),
+                               br(),
                               plotlyOutput("Stocks_evolution"),
+                              br(),
+                              h1('Quandl (API key required)', align = "center"),
+                             br(),
+                              plotlyOutput("Company_Info_ROS"),
+                             br(),
+                              plotlyOutput("Company_Info_ROA"),
+                             br(),
+                              plotlyOutput("Company_Info_ROIC"),
+                             br(),
+                              plotlyOutput("Company_Info_FCF"),
+                             br(),
+                              plotlyOutput("Company_Info_NetMargin")
                                 )
                               )
                       ) #end main panel (stock analysis)
@@ -437,8 +447,9 @@ if (interactive()) {
                               plotlyOutput("Company_Info3"),
                               br(),
                               plotlyOutput("Company_Info4"),
-                                      br(),
+                              br(),
                               plotlyOutput("Company_Info5"),
+                              br(),
                                 )
                               )
                       ) #end main panel (dividend analysis)
@@ -546,12 +557,75 @@ if (interactive()) {
                                year(ref_date) <= input$years_stocks[2])
                            )
            })
+          
+           quandl_df_interactive_1  <- reactive ({
+
+               df1_quandl =  df1_quandl[df1_quandl$ticker %in% input$selected_tickers ,]
+                  
+                return( 
+                 df1_quandl  %>% filter( year(df1_quandl$calendardate) >= input$years_divs[1] &
+                                 year(df1_quandl$calendardate) <= input$years_divs[2])
+                        )
+         
+           })
       
         ### GRAPHS ###
         output$Stocks_evolution <-renderPlotly({
                         plot_ly(df_historical_interactive(), type = 'scatter', mode = 'lines')%>%
-                    add_trace(x = ~ref_date, y = ~price_close, name = ~ticker)
+                    add_trace(x = ~ref_date, y = ~price_close, name = ~ticker) %>%
+            layout(title = '<b>Stocks Price Evolution<b>', xaxis = list(title = 'Date'), 
+         yaxis = list(title = 'Price ($)'), legend = list(title=list(text='<b> Tickers </b>')))
         })
+        
+       output$Company_Info_ROS <-renderPlotly({
+                       
+                      plot_ly(quandl_df_interactive_1(), type = 'scatter', mode = 'lines')%>%
+                                          add_trace(x = ~calendardate, y = ~ros*100, name = ~ticker)%>%
+                    layout(title = '<b>Return on Sales Evolution<b>', xaxis = list(title = 'Date'), 
+                 yaxis = list(title = 'ROS (%)'), legend = list(title=list(text='<b> Date </b>')))
+        })
+       
+       output$Company_Info_ROS <-renderPlotly({
+                       
+                      plot_ly(quandl_df_interactive_1(), type = 'scatter', mode = 'lines')%>%
+                                          add_trace(x = ~calendardate, y = ~ros*100, name = ~ticker)%>%
+                    layout(title = '<b>Return on Sales Evolution<b>', xaxis = list(title = 'Date'), 
+                 yaxis = list(title = 'ROS (%)'), legend = list(title=list(text='<b> Date </b>')))
+        })     
+
+       output$Company_Info_ROA <-renderPlotly({
+                       
+                      plot_ly(quandl_df_interactive_1(), type = 'scatter', mode = 'lines')%>%
+                                          add_trace(x = ~calendardate, y = ~roa*100, name = ~ticker)%>%
+                    layout(title = '<b>Return on Assets Evolution<b>', xaxis = list(title = 'Date'), 
+                 yaxis = list(title = 'ROA (%)'), legend = list(title=list(text='<b> Date </b>')))
+        })                
+       
+       output$Company_Info_ROIC <-renderPlotly({
+                       
+                      plot_ly(quandl_df_interactive_1(), type = 'scatter', mode = 'lines')%>%
+                                          add_trace(x = ~calendardate, y = ~roic*100, name = ~ticker)%>%
+                    layout(title = '<b>Return on Invested Capital Evolution<b>', xaxis = list(title = 'Date'), 
+                 yaxis = list(title = 'ROIC (%)'), legend = list(title=list(text='<b> Date </b>')))
+        })    
+       
+              output$Company_Info_FCF <-renderPlotly({
+                       
+                      plot_ly(quandl_df_interactive_1(), type = 'scatter', mode = 'lines')%>%
+                                          add_trace(x = ~calendardate, y = ~fcf*100, name = ~ticker)%>%
+                    layout(title = '<b>Free Cash Flow Evolution<b>', xaxis = list(title = 'Date'), 
+                 yaxis = list(title = 'FCF ($)'), legend = list(title=list(text='<b> Date </b>')))
+        })    
+
+       output$Company_Info_NetMargin <-renderPlotly({
+                       
+                      plot_ly(quandl_df_interactive_1(), type = 'scatter', mode = 'lines')%>%
+                                          add_trace(x = ~calendardate, y = ~netmargin*100, name = ~ticker)%>%
+                    layout(title = '<b>Net Margin Evolution<b>', xaxis = list(title = 'Date'), 
+                 yaxis = list(title = 'Net Margin (%)'), legend = list(title=list(text='<b> Date </b>')))
+        })                        
+       
+
       
                                    
  ##### tabpanel -> Dividend Analysis #####                                    
@@ -643,7 +717,8 @@ if (interactive()) {
                                             name = ~ticker,
                                             color=~ticker
                                           )  %>%
-                                           layout(title = 'Dividend Evolution')
+            layout(title = '<b>Dividend Evolution<b>', xaxis = list(title = 'Date'), 
+         yaxis = list(title = 'Dividend ($)'), legend = list(title=list(text='<b> Tickers </b>')))
                                     
              
                                             }) 
@@ -657,7 +732,8 @@ if (interactive()) {
 
               plot_ly(growth_df_interactive(), type = 'scatter', mode = 'lines')%>%
                                               add_trace(x = ~year_growth, y = ~growth_hist, name = ~Ticker) %>%
-                                              layout(title =sprintf("Dividend growth %s-y ", input$n_years))
+                                layout(title =sprintf("<b>Dividend Growth Evolution %s-y<b>", input$n_years), xaxis = list(title = 'Date'), 
+                             yaxis = list(title = '% Growth Rate'), legend = list(title=list(text='<b> Tickers </b>')))
 
               
             })
@@ -667,8 +743,9 @@ if (interactive()) {
 
                                     
 
-              plot_ly(growth_df_interactive(), y=~growth_hist, type = 'box', name = ~Ticker)%>%
-                                              layout(title =sprintf("Dividend growth %s-y Distribution", input$n_years))
+              plot_ly(growth_df_interactive(), y=~growth_hist, type = 'box', name = ~Ticker) %>%
+            layout(title =sprintf("<b>Dividend Growth %s-y Distribution<b>", input$n_years), xaxis = list(title = '<b> Tickers </b>'), 
+         yaxis = list(title = '% Growth Rate'), legend = list(title=list(text='<b> Tickers </b>')))
 
               
             })
@@ -678,7 +755,8 @@ if (interactive()) {
           
                           plot_ly(df_hist_yield_interactive(), type = 'scatter', mode = 'lines') %>%
                               add_trace(x = ~ym, y = ~yield_corrected, name = ~ticker)  %>%
-                              layout(title = paste('Historical Yield Evolution - Period ',input$years_divs[1], ' to ',input$years_divs[2],sep=""))
+            layout(title = paste('<b>Historical Yield Evolution<b> - Period ',input$years_divs[1], ' to ',input$years_divs[2],sep=""), xaxis = list(title = 'Date'), 
+         yaxis = list(title = '% Yield'), legend = list(title=list(text='<b> Tickers </b>')))
                                             }) 
             
              output$Hist_yield_box <-renderPlotly({
@@ -690,7 +768,8 @@ if (interactive()) {
                                               name = ~ticker,
                                               color=~ticker
                                             )  %>%
-                                             layout(title = paste('Historical Yield Distribution - Period ',input$years_divs[1], ' to ',input$years_divs[2],sep=""))
+                                      layout(title = paste('<b>Historical Yield Distribution<b> - Period ',input$years_divs[1], ' to ',input$years_divs[2],sep=""), xaxis = list(title = 'Tickers'), 
+                                   yaxis = list(title = '% Growth Rate'), legend = list(title=list(text='<b> Tickers </b>')))
                                             }) 
             
           
@@ -698,28 +777,32 @@ if (interactive()) {
 
                         plot_ly(quandl_df_interactive(), type = 'scatter', mode = 'lines')%>%
                                                         add_trace(x = ~calendardate, y = ~100*payoutratio, name = ~ticker) %>%
-                                                       layout(title = 'Payout Ratio')
+            layout(title = '<b>Payout Ratio Evolution<b>', xaxis = list(title = 'Date'), 
+         yaxis = list(title = 'Payout Ratio (%)'), legend = list(title=list(text='<b> Date </b>')))
             })
            
             output$Company_Info3 <-renderPlotly({
 
                       plot_ly(quandl_df_interactive(), type = 'scatter', mode = 'lines')%>%
-                                          add_trace(x = ~calendardate, y = ~100*ebitdamargin, name = ~ticker)%>%
-                               layout(title = 'EBITDA Margin Evolution')
+                                          add_trace(x = ~calendardate, y = ~100*ebitdamargin, name = ~ticker) %>%
+                    layout(title = '<b>EBITDA Margin Evolution<b>', xaxis = list(title = 'Date'), 
+                 yaxis = list(title = 'EBITDA Margin (%)'), legend = list(title=list(text='<b> Date </b>')))
             })
             
              output$Company_Info2 <-renderPlotly({
 
                        plot_ly(quandl_df_interactive(), type = 'scatter', mode = 'lines')%>%
-                          add_trace(x = ~calendardate, y = ~100*grossmargin, name = ~ticker)%>%
-                           layout(title = 'Gross Margin Evolution')
+                          add_trace(x = ~calendardate, y = ~100*grossmargin, name = ~ticker) %>%
+                      layout(title = '<b>Gross Margin Evolution<b>', xaxis = list(title = 'Date'), 
+                   yaxis = list(title = 'Gross Margin (%)'), legend = list(title=list(text='<b> Date </b>')))
             })
              
               output$Company_Info4 <-renderPlotly({
 
                         plot_ly(quandl_df_interactive(), type = 'scatter', mode = 'lines')%>%
                                   add_trace(x = ~calendardate, y = ~100*evebitda, name = ~ticker)%>%
-                       layout(title = 'EV/EBITDA Evolution')
+                      layout(title = '<b>EV/EBITDA Evolution<b>', xaxis = list(title = 'Date'), 
+                   yaxis = list(title = 'EV/EBITDA (%)'), legend = list(title=list(text='<b> Date </b>')))
             })
               
               
@@ -733,7 +816,8 @@ if (interactive()) {
                         range=c(0,150)
                       )
                     ) %>%
-                          layout(title = 'Debt/Assets Evolution')
+                layout(title = '<b>Debt/Assets Evolution Evolution<b>', xaxis = list(title = 'Date'), 
+             yaxis = list(title = 'Debt/Assets Evolution (%)'), legend = list(title=list(text='<b> Date </b>')))
             })
             
             
