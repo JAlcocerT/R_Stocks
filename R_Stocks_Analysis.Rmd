@@ -8,6 +8,8 @@ editor_options:
 ---
 
 
+
+
 ```{r Libraries needed - Installation}
 #Required for the first use of the program in a device
 
@@ -54,12 +56,13 @@ install.packages(c("tibble", "dplyr","writexl","shiny","shinythemes","shinyWidge
 ```{r Load the libraries & Config file}
 
 
+library("rstudioapi") #to manage the directory
 
 #setwd('C:/Users')
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) #this Rmd file must be saved
 
 
-
+library("yaml") 
 vars = yaml.load_file("config.yml")
 quandl_api = vars$config$quandl_api
 #library('data.table')
@@ -67,6 +70,7 @@ quandl_api = vars$config$quandl_api
 #install.packages("pacman")
 pacman::p_load(dplyr,dtplyr,shinythemes,shinyWidgets,readxl,scales,... = tidyverse,DT,ggthemes,ggplot2,plotly,plyr,leaflet,devtools,yaml,tidyr)
 
+### Financial libraries ###
 
 #library("BatchGetSymbols") #depricated --->yfR
 
@@ -74,6 +78,9 @@ library("yfR")      #historical stock valuation -> Instead of BatchGetSymbols
 library("priceR")   #inflation / currency exchange ===> adjust_for_inflation
 library("quantmod") #dividends (getDividends), metals price
 library("Quandl")   #EPS, debt, assets (#API key needed)
+
+############################
+
 
 library(tidyr) #for drop_na
 
@@ -83,9 +90,9 @@ library("qmao")     #quand mod add ons -> EPS
 library("dplyr")
 library("lubridate")
 library("reshape2")
-library("rstudioapi")
 
-library(rstudioapi) #to manage the directory
+
+
 
 
 #setwd("C:/Users/your/windows/path")
@@ -98,7 +105,7 @@ getwd()
 
 ```{r quantmod - test}
 
-quantmod::getSplits('PG')
+df_splits <- quantmod::getSplits('PG')
 
 quantmod::getSplits('LON.DRTY')
 
@@ -166,6 +173,13 @@ df0_quandl <- Quandl("WIKI/KO")
 
 #df1_quandl <- Quandl.datatable('SHARADAR/SF1', ticker='AAPL')
 
+
+df1_quandl <- Quandl.datatable('SHARADAR/SF1',
+                               ticker=c('KO'),
+                               calendardate.gte='2000-12-31',
+                               )
+
+
 df1_quandl <- Quandl.datatable('SHARADAR/SF1',
                                ticker=c('PG','TXN'),
                                calendardate.gte='2000-12-31',
@@ -190,7 +204,7 @@ df1_quandl <- Quandl.datatable('SHARADAR/SF1',                        ### quandl
 
 
 
-df1_quandl <- Quandl.datatable("SHARADAR/SF1", paginate = TRUE) #eps #dps #gross_margin #div_yield #debt #assets #ebitda #ev #ebitdamargin #...
+#df1_quandl <- Quandl.datatable("SHARADAR/SF1", paginate = TRUE) #eps #dps #gross_margin #div_yield #debt #assets #ebitda #ev #ebitdamargin #...
 
 # test_ticker <- sub("NASDAQ:", "", test_ticker)
 # test_ticker <- sub("NYSE:", "", test_ticker)
@@ -202,6 +216,14 @@ df1_quandl$payoutratio = df1_quandl$dps/df1_quandl$eps
 df1_quandl$debt_assets = df1_quandl$debt/df1_quandl$assets
 
 
+
+
+plot_ly(df1_quandl, type = 'scatter', mode = 'lines') %>%
+      add_trace(x = ~calendardate, y = ~ros*100, name='ROS') %>%
+                    layout(title = '<b>Return on Sales<b>', xaxis = list(title = 'Date'), 
+                 yaxis = list(title = 'ROS (%)'), legend = list(title=list(text='<b> Date </b>')))
+
+
 plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
                     add_trace(x = ~calendardate, y = ~ros, name = ~ticker)%>%
         layout(title = 'ROS')
@@ -211,7 +233,7 @@ plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
         layout(title = 'roic')
 
 plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
-                    add_trace(x = ~calendardate, y = ~roa, name = ~ticker)%>%
+                    add_trace(x = ~calendardate, y = ~roa*100, name = ~ticker)%>%
         layout(title = 'roa')
 
 plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
@@ -222,9 +244,41 @@ plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
                     add_trace(x = ~calendardate, y = ~fcf, name = ~ticker)%>%
         layout(title = 'Free Cash Flow - FCF')
 
-plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
-                    add_trace(x = ~calendardate, y = ~eps, name = ~ticker)%>%
-        layout(title = 'Earning per Share - EPS')
+
+plot_ly(df1_quandl, type = 'bar')%>%
+                    add_trace(x = ~calendardate, y = ~fcf, name = ~ticker )%>%
+                    layout(title = '<b>Free Cash Flow - FCF<b>', xaxis = list(title = 'Date'), 
+                 yaxis = list(title = 'FCF ($)'), legend = list(title=list(text='<b> Date </b>')))
+
+
+# plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
+#                     add_trace(x = ~calendardate, y = ~eps, name = ~ticker)%>%
+#         layout(title = 'Earning per Share - EPS')
+
+
+plot_ly(df1_quandl, type = 'bar')%>%
+                    add_trace(x = ~calendardate, y = ~eps, name = ~ticker) %>%
+                    layout(title = '<b>Earning per Share - EPS<b>', xaxis = list(title = 'Date'), 
+                 yaxis = list(title = 'EPS ($)'), legend = list(title=list(text='<b> Ticker </b>')))
+
+
+plot_ly(df1_quandl, x = ~calendardate, y = ~eps, type = "bar", name = ~ticker) %>%
+    add_trace(x = ~calendardate, y = ~netmargin*100, type = 'scatter', mode = "lines", yaxis = "y2", name = ~ticker) %>%
+    layout(yaxis2 = list(overlaying = "y", side = "right"))
+
+
+plot_ly(df1_quandl, x = ~calendardate, y = ~eps, type = "bar", name = ~ticker) %>%
+    add_trace(x = ~calendardate, y = ~netmargin*100, type = 'scatter', mode = "lines", yaxis = "y2", name = ~ticker)%>%
+                    layout(title = '<b>Earning per Share and Net Margin<b>', xaxis = list(title = 'Date'), 
+                 yaxis = list(title = 'EPS ($)'), legend = list(title=list(text='<b> Ticker </b>')),
+                yaxis2 = list(overlaying = "y", side = "right",automargin = T,title = "Net Margin"))
+
+plot_ly(df1_quandl, name = ~ticker) %>%
+    add_trace(x = ~calendardate, y = ~netmargin*100, type = 'scatter', mode = "lines", yaxis = "y2")%>%
+      add_trace(x = ~calendardate, y = ~eps, type = 'bar')%>%
+                    layout(title = '<b>Earning per Share and Net Margin<b>', xaxis = list(title = 'Date'), 
+                 yaxis = list(title = 'EPS ($)'), legend = list(title=list(text='<b> Ticker </b>')),
+                yaxis2 = list(overlaying = "y", side = "right",automargin = T,title = "Net Margin (%)"))
 
 plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
                     add_trace(x = ~calendardate, y = ~assetturnover, name = ~ticker)%>%
@@ -277,6 +331,9 @@ plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
 
 ### ROE Estimation with ROA + Debt/Assets Ratio
 
+plot_ly(df1_quandl, type = 'scatter', mode = 'lines')%>%
+                    add_trace(x = ~calendardate, y = ~roa/(1-debt_assets)*100, name = ~ticker)%>%
+        layout(title = 'ROE')
 
 
   
@@ -359,40 +416,88 @@ unique(df_collection$ticker)
 ```
 
 
-```{r sp500 vs gold - yfR}
+```{r sp500 vs gold -  commodities - yfR - interactive ready}
 
 
 
 # set options for algorithm
 
-#my_ticker <- 'META'
-my_ticker <- c('^GSPC')
+
+my_index <- c('^GSPC','^GDAXI')
+first_date <- Sys.Date() - 100
+last_date <- Sys.Date()
+
+# fetch data
+df_index <- yf_get(tickers = my_index, 
+                     first_date = first_date,
+                     last_date = last_date,
+                     freq_data = "weekly") %>% 
+           select('ticker','ref_date','price_close') 
+
+colnames(df_index) <- c('index','ref_date','price_index')
+
+
+#my_ticker <- c('GC=F')
+my_commodities <- c('GC=F','CL=F')
+# fetch data
+df_commodity <- yf_get(tickers = my_commodities, 
+                     first_date = first_date,
+                     last_date = last_date,
+                     freq_data = "weekly",
+                     thresh_bad_data = 0.55) %>% 
+               select('ticker','ref_date','price_close')
+
+
+colnames(df_commodity) <- c('commodity','ref_date','price_com')
+
+
+df_index_com <- merge(df_index, df_commodity, by = "ref_date") 
+df_index_com$KPI <- df_index_com$price_index/df_index_com$price_com
+df_index_com$Ratio <-paste(df_index_com$index,df_index_com$commodity,sep="/")
+        
+# 
+#         plot_ly(df_index_com, type = 'scatter', mode = 'lines') %>%
+#       add_trace(x = ~ref_date, y = ~KPI, name = 'SP/Gold') %>%
+#                     layout(title = '<b>Index to Gold Evolution (one ticker - one com<b>', xaxis = list(title = 'Date'), 
+#                  yaxis = list(title = 'Ratio'), legend = list(title=list(text='<b> Index / Commodity </b>')))
+        
+        
+        
+
+        plot_ly(df_index_com, type = 'scatter', mode = 'lines') %>%
+      add_trace(x = ~ref_date, y = ~KPI, name = ~Ratio) %>%
+                    layout(title = '<b>Index to Gold Evolution - Multiple<b>', xaxis = list(title = 'Date'), 
+                 yaxis = list(title = 'Ratio'), legend = list(title=list(text='<b> Index / Commodity </b>')))
+        
+        
+        
+
+```
+
+```{r indexes - yfR - interactive ready}
+
+#https://finance.yahoo.com/world-indices
+
+
+# set options for algorithm
+
+
+my_index <- c('^GSPC','^DJI','^GDAXI','^N225','^IXIC','^FTSE','^N100','^IBEX')
 first_date <- Sys.Date() - 12500
 last_date <- Sys.Date()
 
 # fetch data
-result_SP <- yf_get(tickers = my_ticker, 
+df_index <- yf_get(tickers = my_index, 
                      first_date = first_date,
                      last_date = last_date,
                      freq_data = "weekly")
 
-
-my_ticker <- c('GC=F')
-# fetch data
-result_gold <- yf_get(tickers = my_ticker, 
-                     first_date = first_date,
-                     last_date = last_date,
-                     freq_data = "weekly",
-                     thresh_bad_data = 0.55)
+ plot_ly(df_index, type = 'scatter', mode = 'lines') %>%
+      add_trace(x = ~ref_date, y = ~price_close, name = ~ticker) %>%
+                    layout(title = '<b>Index Price Evolution<b>', xaxis = list(title = 'Date'), 
+                 yaxis = list(title = 'Price ($)'), legend = list(title=list(text='<b> Index </b>')))
 
 
-df_SPgold <- merge(result_SP, result_gold, by = "ref_date") 
-df_SPgold$KPI <- df_SPgold$price_close.x/df_SPgold$price_close.y
-
-  
-        ggplotly(
-        ggplot(df_SPgold, aes(x=ref_date, y=KPI)) + geom_line()
-        )
 
 ```
 
@@ -626,6 +731,26 @@ df_tickers <- result_aux %>% select(ticker, price_close, ref_date)
 
 ```
 
+
+```{r FIAT exchange - priceR test}
+
+exc_rate <- historical_exchange_rates("EUR", to = "USD",
+                                    start_date = "2010-01-01",
+                                    end_date = "2022-08-30")
+
+
+colnames(exc_rate)[which(names(exc_rate) == "date")] <- "ref_date"
+colnames(exc_rate)[2] <- "ratio"
+
+
+plot_ly(exc_rate, type = 'scatter', mode = 'lines')%>%
+      add_trace(x = ~ref_date, y = ~ratio, showlegend = FALSE) %>%
+                    layout(title = '<b>USD to EUR<b>', xaxis = list(title = 'Date'), 
+                 yaxis = list(title = 'Exchange Rate'), legend = list(title=list(text='<b> Date </b>')))
+
+
+```
+
 ```{r evolution with other currency - priceR & yfR}
 
 exc_rate <- historical_exchange_rates("USD", to = "PLN",
@@ -653,7 +778,7 @@ df_tickers_curr$price_close_eur = df_tickers_curr$price_close*df_tickers_curr$on
 
 
 
-```{r filter out 2022+ for inflation - priceR}
+```{r filter out 2022+ for inflation - yfR for priceR}
 
 #adjust_for_inflation provides the inflation data for a year few months after it ended.
 
@@ -664,7 +789,7 @@ df_tickers_inflation <- df_tickers %>% filter(ref_date <= '2021-12-31')
 ```
 
 
-```{r stock value & inflation correction - yfR & priceR}
+```{r inflation data - priceR test }
 
 
 #   years <- 1920:2000
@@ -676,15 +801,44 @@ df_tickers_inflation <- df_tickers %>% filter(ref_date <= '2021-12-31')
 # 
 
 Year <- 2000:2021
-#nominal_prices <- rnorm(10, mean=10, sd=3)
 nominal_prices <- rep(1,length(Year))
 
 df_inflation <- data.frame(Year, nominal_prices)
 df_inflation$in_202x_dollars_factor <- adjust_for_inflation(nominal_prices, Year, "US", to_date = 2021) #PriceR
 
+
+df_inflation <- mutate(df_inflation, inflation_level = ( lag(in_202x_dollars_factor)/in_202x_dollars_factor -1)*100 )
+
+
+plot_ly(df_inflation, type = 'scatter', mode = 'lines') %>%
+      add_trace(x = ~Year, y = ~in_202x_dollars_factor, name="Inflation factor to Y2021") %>%
+                    layout(title = '<b>US Historical Inflation<b>', xaxis = list(title = 'Year'), 
+                           yaxis = list(title = 'a'),
+                           legend = list(title=list(text='<b> Legend </b>')))  %>%
+      add_trace(x = ~Year, y = ~inflation_level, name="Inflation Yearly") %>%
+                    layout(title = '<b>US Historical Inflation<b>', xaxis = list(title = 'Year'), 
+                          yaxis = list(title = '(%)'), 
+                          legend = list(title=list(text='<b> Legend </b>')))
+
+
+
+plot_ly(df_inflation) %>%
+    add_trace(x = ~Year, y = ~in_202x_dollars_factor, type = 'scatter', mode = "lines", yaxis = "y2",name="$ Factor Y2021") %>%
+      add_trace(x = ~Year, y = ~inflation_level, type = 'bar',name='Yearly Inflation US')%>%
+                    layout(title = '<b>US Inflation Data<b>', xaxis = list(title = 'Date'), 
+                           yaxis = list(title = 'Inflation (%Y)'), legend = list(title=list(text='<b> Legend </b>')),
+                           yaxis2 = list(overlaying = "y", side = "right",automargin = T,title = "Factor Y2021",range = c(0,3))
+                          )
+
+
+# 
+# ggplot(df_inflation,
+#            aes(x=year, y=in_202x_dollars_factor)) + geom_line()
+
+
 ```
 
-```{r stock value & inflation correction - test}
+```{r stock value & inflation correction - yfR & priceR}
 
 
 
@@ -717,6 +871,35 @@ df_tickers_inflation["real_value_202x"] <- df_tickers_inflation$price_close/df_t
   #  ggplotly(
   # ggplot(df_tickers_inflation, aes(x=ref_date, y=real_value_202x, group=ticker)) + geom_line(aes(colour = ticker))
   #  )
+```
+
+
+```{r Dividends - quantmod test}
+
+Your_Ticker <- 'KO'
+
+df_divs <- getDividends(Your_Ticker,  #quantmod
+             from = "2010-01-01",
+             to = Sys.Date()-30, 
+             src = "yahoo", 
+             auto.assign = TRUE, 
+             auto.update = TRUE, 
+             verbose = FALSE)
+
+
+
+df_divs <- data.frame(date=index(df_divs), coredata(df_divs))
+colnames(df_divs) <- c('date','div')
+
+
+
+plot_ly(df_divs, type = 'bar')%>%
+      add_trace(x = ~date, y = ~div, showlegend = FALSE) %>%
+                    layout(title = '<b>Historical Ticker Dividend<b>', xaxis = list(title = 'Date'), 
+                 yaxis = list(title = 'USD'), legend = list(title=list(text='<b> Date </b>')))
+
+
+
 ```
 
 
@@ -1173,7 +1356,7 @@ growth_df <-  rbind(growth_df,
 
 
 
-```{r historical yield - - quantmod & yFr - test}
+```{r historical yield - quantmod & yFr - test}
 
 test_ticker <- 'JNJ'
 
@@ -2083,6 +2266,72 @@ plot_ly() %>%
 
    
 ```
+
+
+
+```{r Portfolio DCA - test}
+
+
+# set as direction the one of .Rmd archive; .xlsx and .Rmd mut be on same folder
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+my_portfolio <- read_excel("Portfolio.xlsx", sheet="portfolio1")
+# clear empty cells in my_data; overwrite it
+my_portfolio <- na.omit(my_portfolio)
+
+my_portfolio$Ticker <- sub("NASDAQ:", "", my_portfolio$Ticker)
+my_portfolio$Ticker <- sub("NYSE:", "", my_portfolio$Ticker)
+
+colnames(my_portfolio) <- c('ticker','DCA','Amount')
+
+initial_date="2010-01-01" #year(initial_date)
+ending_date="2022-12-31"
+
+## Given tickers and buy dates, provide the avg yield per ticker on the moment of buy ##
+
+
+      df_historical <- yf_get(tickers = my_portfolio$Ticker,          ### yfr ###
+                              first_date= initial_date,
+                              last_date= ending_date,
+                              thresh_bad_data = 0.2,
+                              freq_data="monthly") %>% select(ticker, price_close, ref_date)
+      
+      
+
+
+      df_DCA = merge(df_historical, my_portfolio, by = "ticker") 
+
+      plot_ly(df_DCA, type = 'scatter', mode = 'lines') %>%
+                    add_trace(x = ~ref_date, y = ~price_close, name = ~ticker)
+      
+      
+      
+      
+      
+plot_ly(df_DCA) %>%
+        add_trace(x = ~ref_date, y = ~price_close, type = 'scatter', mode = "lines", name = ~ticker)%>%
+      add_trace(x = ~ref_date, y = ~DCA, type = 'scatter', mode = "lines", yaxis = "y2", name = ~ticker)%>%
+                    layout(title = '<b> DCA <b>', xaxis = list(title = 'Date'), 
+                             yaxis = list(title = 'Price ($)'), legend = list(title=list(text='<b> Ticker </b>')),
+                            yaxis2 = list(overlaying = "y", side = "right",automargin = T,title = "DCA ($)"))
+      
+      
+# initialize plot
+fig <- plot_ly()
+
+# add data from first dataframe Df1
+fig <- fig %>%
+    add_trace(data=df_historical, name=~ticker, x = ~ref_date, y =~price_close, type = 'scatter', mode = "lines")
+
+# add data from second dataframe Df2
+fig <- fig %>%
+    add_trace(data=df_DCA, name=~ticker, x = ~ref_date, y = ~DCA, type = 'scatter', mode = "lines")
+
+# show figure
+fig
+
+
+```
+
 
 
 ```{r Yield on Buy}
