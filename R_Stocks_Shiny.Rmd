@@ -61,6 +61,7 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 #setwd("C:/Users/your/windows/path")
 
 # Get your API key from quandl.com and include it on a 'config.yaml' file
+library("yaml") 
 vars = yaml.load_file("config.yml")
 quandl_api = vars$config$quandl_api
  
@@ -116,8 +117,10 @@ my_portfolio <- read_excel("Portfolio.xlsx", sheet="portfolio1")
 
 # clear empty cells in my_data; overwrite it
 my_portfolio <- na.omit(my_portfolio)
+my_portfolio$Ticker <- sub("NASDAQ:", "", my_portfolio$Ticker)
+my_portfolio$Ticker <- sub("NYSE:", "", my_portfolio$Ticker)
 
-
+test_ticker <- my_portfolio$Ticker
 
 ```
 
@@ -126,9 +129,15 @@ my_portfolio <- na.omit(my_portfolio)
 #NASDAQ:TXN ---> TXN in yahoo finance
 #NYSE:PG ---> PG...
 
-#test_ticker <- my_portfolio$Ticker
-test_ticker <- c('KO','PG','JNJ','PFE','INTC','MMM','MCD','TXN','XOM','BLK','TROW','MRK','MO','O','AMT','VFC')
+
+
+test_ticker <- c('KO','PG')
+#test_ticker <- c('KO','PG','JNJ','PFE','INTC','MMM','MCD','TXN','XOM','BLK','TROW','MRK','MO','O','AMT','VFC')
 # test_ticker <- c('JNJ','ABT','PG','VFC','BLK','ABBV','T','VZ','SWK','TROW','MRK','PFE','INTC','MMM','MCD','BMY','EPD','RIO','NKE','CAT','WBA','tak','mc.pa','t.to','tyo.4502','CL') 
+
+
+my_commodities <- c('GC=F','CL=F')
+my_index <- c('^GSPC','^DJI','^GDAXI','^N225','^IXIC','^FTSE','^N100','^IBEX')
 
 ```
 
@@ -138,7 +147,8 @@ test_ticker <- c('KO','PG','JNJ','PFE','INTC','MMM','MCD','TXN','XOM','BLK','TRO
 
 initial_date="2010-01-01" #year(initial_date)
 #ending_date="2023-01-14"
-ending_date="2022-12-31"
+ending_date="2022-12-31" #IMPORTANT: Historical inflation data on the current year might be unavailable
+
 
 
 ##### tabpanel -> Stock Analysis ##### 
@@ -149,6 +159,9 @@ ending_date="2022-12-31"
                               last_date= ending_date,
                               thresh_bad_data = 0.2,
                               freq_data="monthly") %>% select(ticker, price_close, ref_date)
+
+
+        df_historical$ref_date_year = year(df_historical$ref_date)
       
 ##### tabpanel -> Dividend Analysis ##### 
 
@@ -491,12 +504,21 @@ if (interactive()) {
                        fluidRow(
                             column(12,
                               h1('Cash flow analysis - No dividend re-investment', align = "center"),
+                                br(),
+                                br(),
                               plotlyOutput("YoC"),
+                                br(),
                               plotlyOutput('Div_CF'),
+                                br(),
                               plotlyOutput('Stocks_bought'),
+                                br(),
                               plotlyOutput('YoC_hist'),
+                                br(),
                               plotlyOutput('CF_hist'),
+                                br(),
                               DTOutput('DCA_DF'),
+                              DTOutput('DCA_DF_v2'),
+                              plotlyOutput('DCA_Portfolio'),
                                 )
                               )
                       ) #end main panel (currencies)
@@ -704,7 +726,7 @@ if (interactive()) {
        output$Company_Info_ROIC <-renderPlotly({
                        
                       plot_ly(quandl_df_interactive_1(), type = 'scatter', mode = 'lines')%>%
-                                          add_trace(x = ~calendardate, y = ~roic*100, name = ~ticker)%>%
+                                          add_trace(x = ~calendardate, y = ~roic*100, name = ~ticker) %>%
                     layout(title = '<b>Return on Invested Capital Evolution<b>', xaxis = list(title = 'Date'), 
                  yaxis = list(title = 'ROIC (%)'), legend = list(title=list(text='<b> Tickers </b>')))
         })    
@@ -878,7 +900,7 @@ if (interactive()) {
                         plot_ly(quandl_df_interactive(), type = 'scatter', mode = 'lines')%>%
                                                         add_trace(x = ~calendardate, y = ~100*payoutratio, name = ~ticker) %>%
             layout(title = '<b>Payout Ratio Evolution<b>', xaxis = list(title = 'Date'), 
-         yaxis = list(title = 'Payout Ratio (%)'), legend = list(title=list(text='<b> Date </b>')))
+         yaxis = list(title = 'Payout Ratio (%)'), legend = list(title=list(text='<b> Tickers </b>')))
             })
            
             output$Company_Info3 <-renderPlotly({
@@ -886,7 +908,7 @@ if (interactive()) {
                       plot_ly(quandl_df_interactive(), type = 'scatter', mode = 'lines')%>%
                                           add_trace(x = ~calendardate, y = ~100*ebitdamargin, name = ~ticker) %>%
                     layout(title = '<b>EBITDA Margin Evolution<b>', xaxis = list(title = 'Date'), 
-                 yaxis = list(title = 'EBITDA Margin (%)'), legend = list(title=list(text='<b> Date </b>')))
+                 yaxis = list(title = 'EBITDA Margin (%)'), legend = list(title=list(text='<b> Tickers </b>')))
             })
             
              output$Company_Info2 <-renderPlotly({
@@ -894,7 +916,7 @@ if (interactive()) {
                        plot_ly(quandl_df_interactive(), type = 'scatter', mode = 'lines')%>%
                           add_trace(x = ~calendardate, y = ~100*grossmargin, name = ~ticker) %>%
                       layout(title = '<b>Gross Margin Evolution<b>', xaxis = list(title = 'Date'), 
-                   yaxis = list(title = 'Gross Margin (%)'), legend = list(title=list(text='<b> Date </b>')))
+                   yaxis = list(title = 'Gross Margin (%)'), legend = list(title=list(text='<b> Tickers </b>')))
             })
              
               output$Company_Info4 <-renderPlotly({
@@ -902,7 +924,7 @@ if (interactive()) {
                         plot_ly(quandl_df_interactive(), type = 'scatter', mode = 'lines')%>%
                                   add_trace(x = ~calendardate, y = ~100*evebitda, name = ~ticker)%>%
                       layout(title = '<b>EV/EBITDA Evolution<b>', xaxis = list(title = 'Date'), 
-                   yaxis = list(title = 'EV/EBITDA (%)'), legend = list(title=list(text='<b> Date </b>')))
+                   yaxis = list(title = 'EV/EBITDA (%)'), legend = list(title=list(text='<b> Tickers </b>')))
             })
               
               
@@ -917,7 +939,7 @@ if (interactive()) {
                       )
                     ) %>%
                 layout(title = '<b>Debt/Assets Evolution Evolution<b>', xaxis = list(title = 'Date'), 
-             yaxis = list(title = 'Debt/Assets Evolution (%)'), legend = list(title=list(text='<b> Date </b>')))
+             yaxis = list(title = 'Debt/Assets Evolution (%)'), legend = list(title=list(text='<b> Tickers </b>')))
             })
             
             
@@ -985,6 +1007,29 @@ df_inflation$money_input_infl_year <- input$money_in_portf/df_inflation$in_2020_
         })
             
             
+          DCA_df_divs_interactive_v2  <- reactive ({
+                                            
+        
+          DCA_df_divs <- left_join(DCA_df_interactive(), divs_agg %>% group_by(ticker), by=c('ticker'='ticker')) 
+          
+  
+      
+          DCA_df_hist <- left_join(DCA_df_divs, df_historical, by=c('ticker'='ticker', 'Year_div'='ref_date_year')) 
+          
+         
+         DCA_df_hist$ticker_dca <- paste('DCA',DCA_df_hist$ticker)
+        
+        # DCA_df_divs$invested <- DCA_df_divs$Stocks*DCA_df_divs$DCA
+        # DCA_df_divs$div_cash_flow <- DCA_df_divs$Stocks*DCA_df_divs$div
+        # DCA_df_divs$YoC_Ticker <- ((DCA_df_divs$div_cash_flow)/(DCA_df_divs$invested)+1)*100-100 
+        
+            
+          return( 
+           DCA_df_hist 
+                  )
+        })
+            
+            
             
             
             dfz_interactive <-reactive({
@@ -1031,18 +1076,21 @@ df_inflation$money_input_infl_year <- input$money_in_portf/df_inflation$in_2020_
             
             output$DCA_DF = renderDT(DCA_df_divs_interactive())
             
+            
+           output$DCA_DF_v2 = renderDT( DCA_df_divs_interactive_v2())
+            
             ### GRAPHS ###
             
-         
-            
-            
+
               output$YoC <-renderPlotly({
                 
     plot_ly( DCA_df_divs_interactive(), type = 'bar') %>%
       add_trace(x = ~ticker, y = ~YoC_Ticker, name = 'Portfolio YoC') %>%   
-                          layout(title = paste("YoC TODAY* per ticker with last buy on ",input$years_portf[2]))
+                    layout(title = paste("<b>YoC TODAY* per ticker<b> with last buy on ",input$years_portf[2]),
+                           xaxis = list(title = 'Tickers'), 
+                            yaxis = list(title = 'YoC (%)'), legend = list(title=list(text='<b> Tickers </b>')))
                        
-               
+              # layout(title = paste("YoC TODAY* per ticker with last buy on ",input$years_portf[2]))  %>%
                 
                 
                 
@@ -1054,14 +1102,16 @@ df_inflation$money_input_infl_year <- input$money_in_portf/df_inflation$in_2020_
               
                      plot_ly(hist_price_infl_filtered_interactive(), type = 'bar')%>%
                                         add_trace(x = ~ym, y = ~Stocks, name = ~ticker)  %>%   
-                                        layout(title ="Number of stocks that were bought")
+                    layout(title = "<b>Number of stocks that were bought<b>",
+                           xaxis = list(title = 'Date'), 
+                            yaxis = list(title = 'Stocks Bought'), legend = list(title=list(text='<b> Tickers </b>')))
               
             })
             
             output$Div_CF <-renderPlotly({
                 
     plot_ly(DCA_df_divs_interactive(), labels = ~ticker, values = ~div_cash_flow, type = 'pie')%>% 
-                layout(title = 'Dividend Cash Flow split TODAY*',
+                layout(title = '<b>Dividend Cash Flow split TODAY*</b>',
          xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
          yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
          )
@@ -1078,12 +1128,12 @@ df_inflation$money_input_infl_year <- input$money_in_portf/df_inflation$in_2020_
                     title = "<b>$</b> invested")
 
                   plot_ly() %>%
-                            add_trace(data= dfz_interactive(), x = ~yearz, y = ~historical_yield, name = "Portfolio Historical Yield", type = "bar") %>%
+                            add_trace(data= dfz_interactive(), x = ~yearz, y = ~historical_yield, name = "<b>Portfolio Historical Yield</b>", type = "bar") %>%
                             add_trace(data= aggregate(money_input_infl ~ Year, data = hist_price_infl_filtered_interactive(), FUN = sum), name="Monetary Input", x = ~Year, y = ~money_input_infl, yaxis = "y2", mode = "lines+markers", type = "scatter")  %>%
                             layout(
-                                  title = "Historical YoC of the Portfolio vs Monetary input", yaxis2 = ay,
+                                  title = "<b>Historical YoC of the Portfolio vs Monetary input<b>", yaxis2 = ay,
                                   xaxis = list(title="Year"),
-                                  yaxis = list(title="<b>%</b> YoC")
+                                  yaxis = list(title="YoC (%)")
                             )%>%
                            layout(plot_bgcolor='#e5ecf6',
                                 xaxis = list(
@@ -1106,10 +1156,37 @@ df_inflation$money_input_infl_year <- input$money_in_portf/df_inflation$in_2020_
             plot_ly() %>% 
                   add_trace(data= dfz_interactive(), x = ~yearz, y = ~historical_CF, name = "Portfolio CF", type = "bar") %>%
                   add_trace(data= aggregate(money_input_infl ~ Year, data = hist_price_infl_filtered_interactive(), FUN = sum), name="Monetary Input", x = ~Year, y = ~money_input_infl, mode = "lines+markers", type = "scatter") %>%   
-                                  layout(title ="Historical CF vs Monetary Input")
+                  layout(
+                                  title = "<b>Historical CF vs Monetary Input<b>",
+                                  xaxis = list(title="Year"),
+                                  yaxis = list(title="Historical Cash Flow ($)")
+                        )
         
                          
                  
+               })
+                
+                
+                output$DCA_Portfolio <- renderPlotly({
+# 
+#                    plot_ly(DCA_df_divs_interactive_v2() ) %>%
+#             add_trace(x = ~Year_div, y = ~DCA, type = 'scatter', mode = "lines", name = ~ticker)%>%
+#                         layout(title = '<b> DCA <b>', xaxis = list(title = 'Date'),
+#                                  yaxis = list(title = 'Price ($)'), legend = list(title=list(text='<b> Ticker </b>')))
+                  
+            #       
+            #        plot_ly(DCA_df_divs_interactive_v2() ) %>%
+            # add_trace(x = ~ref_date, y = ~DCA, type = 'scatter', mode = "lines", name = ~ticker)%>%
+            #             layout(title = '<b> DCA <b>', xaxis = list(title = 'Date'),
+            #                      yaxis = list(title = 'Price ($)'), legend = list(title=list(text='<b> Ticker </b>')))
+                  
+                  
+                   plot_ly(DCA_df_divs_interactive_v2() ) %>%
+            add_trace(x = ~ref_date, y = ~price_close, type = 'scatter', mode = "lines", name = ~ticker)%>%
+          add_trace(x = ~ref_date, y = ~DCA, type = 'scatter', mode = "lines", name = ~ticker_dca)%>%
+                        layout(title = '<b> DCA <b>', xaxis = list(title = 'Date'),
+                                 yaxis = list(title = 'Price ($)'), legend = list(title=list(text='<b> Ticker </b>')))
+         
                })
                 
         ##### tabpanel -> Indexes ##### 

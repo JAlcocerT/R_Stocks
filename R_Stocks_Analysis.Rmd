@@ -134,6 +134,11 @@ my_portfolio <- read_excel("Portfolio.xlsx", sheet="portfolio1")
 # clear empty cells in my_data; overwrite it
 my_portfolio <- na.omit(my_portfolio)
 
+my_portfolio$Ticker <- sub("NASDAQ:", "", my_portfolio$Ticker)
+my_portfolio$Ticker <- sub("NYSE:", "", my_portfolio$Ticker)
+
+test_ticker <- my_portfolio$Ticker
+
 
 
 ```
@@ -2289,7 +2294,7 @@ ending_date="2022-12-31"
 ## Given tickers and buy dates, provide the avg yield per ticker on the moment of buy ##
 
 
-      df_historical <- yf_get(tickers = my_portfolio$Ticker,          ### yfr ###
+      df_historical <- yf_get(tickers = my_portfolio$ticker,          ### yfr ###
                               first_date= initial_date,
                               last_date= ending_date,
                               thresh_bad_data = 0.2,
@@ -2298,36 +2303,58 @@ ending_date="2022-12-31"
       
 
 
-      df_DCA = merge(df_historical, my_portfolio, by = "ticker") 
+      df_DCA = merge(df_historical, my_portfolio, by = "ticker")
+      
+         
+     df_DCA$ticker_dca <- paste('DCA',df_DCA$ticker)
 
-      plot_ly(df_DCA, type = 'scatter', mode = 'lines') %>%
-                    add_trace(x = ~ref_date, y = ~price_close, name = ~ticker)
+      # plot_ly(df_DCA, type = 'scatter', mode = 'lines') %>%
+      #               add_trace(x = ~ref_date, y = ~price_close, name = ~ticker)
+      # 
+      # 
+      # plot_ly(df_DCA %>% filter(ticker == 'KO'), type = 'scatter', mode = 'lines') %>%
+      #               add_trace(x = ~ref_date, y = ~price_close, name = ~ticker)
       
+   
       
+    #%>% filter(ticker == 'KO')
+     
+      # plot_ly(df_DCA ) %>%
+      #       add_trace(x = ~ref_date, y = ~price_close, type = 'scatter', mode = "lines", name = ~ticker)%>%
+      #     add_trace(x = ~ref_date, y = ~DCA, type = 'scatter', mode = "lines", name = ~ticker_dca)%>%
+      #                   layout(title = '<b> DCA <b>', xaxis = list(title = 'Date'), 
+      #                            yaxis = list(title = 'Price ($)'), legend = list(title=list(text='<b> Ticker </b>')))
       
-      
-      
-plot_ly(df_DCA) %>%
-        add_trace(x = ~ref_date, y = ~price_close, type = 'scatter', mode = "lines", name = ~ticker)%>%
-      add_trace(x = ~ref_date, y = ~DCA, type = 'scatter', mode = "lines", yaxis = "y2", name = ~ticker)%>%
-                    layout(title = '<b> DCA <b>', xaxis = list(title = 'Date'), 
-                             yaxis = list(title = 'Price ($)'), legend = list(title=list(text='<b> Ticker </b>')),
-                            yaxis2 = list(overlaying = "y", side = "right",automargin = T,title = "DCA ($)"))
-      
-      
-# initialize plot
-fig <- plot_ly()
 
-# add data from first dataframe Df1
-fig <- fig %>%
-    add_trace(data=df_historical, name=~ticker, x = ~ref_date, y =~price_close, type = 'scatter', mode = "lines")
+  
+      
+    # plot_ly(df_DCA ) %>%
+    #         add_trace(x = ~ref_date, y = ~price_close, type = 'scatter', mode = "lines", name = ~ticker)%>%
+    #       add_trace(x = ~ref_date, y = ~DCA, type = 'scatter', mode = "lines", yaxis = "y2", name = ~ticker_dca)%>%
+    #                     layout(title = '<b> DCA <b>', xaxis = list(title = 'Date'), 
+    #                              yaxis = list(title = 'Price ($)'), legend = list(title=list(text='<b> Ticker </b>')),
+    #                             yaxis2 = list(overlaying = "y", side = "right",automargin = T,title = "DCA ($)"))
+          
+    # class(df_DCA$price_close)
+    # class(df_DCA$DCA)  
+    # class(as.numeric(df_DCA$DCA))  
+    # 
+    # as.numeric(as.character(df_DCA$DCA))  
+    
+     df_DCA$DCA = as.numeric(  gsub(",", "", df_DCA$DCA) ) /100
+    
+    
+      plot_ly(df_DCA ) %>%
+            add_trace(x = ~ref_date, y = ~price_close, type = 'scatter', mode = "lines", name = ~ticker)%>%
+          add_trace(x = ~ref_date, y = ~DCA, type = 'scatter', mode = "lines", name = ~ticker_dca)%>%
+                        layout(title = '<b> DCA <b>', xaxis = list(title = 'Date'),
+                                 yaxis = list(title = 'Price ($)'), legend = list(title=list(text='<b> Ticker </b>')))
+      
+  
+    
 
-# add data from second dataframe Df2
-fig <- fig %>%
-    add_trace(data=df_DCA, name=~ticker, x = ~ref_date, y = ~DCA, type = 'scatter', mode = "lines")
-
-# show figure
-fig
+    
+   
 
 
 ```
@@ -2346,6 +2373,7 @@ fig
 
 ```{r export data}
 
+#save the pulled data for later use
 
 
 
@@ -2357,6 +2385,24 @@ fig
 
 #No internet access to fetch the data? Use this chunk to import already downloaded data
 
+
+
+```
+
+
+
+```{r import xml data}
+# 
+# install.packages("XML")
+# 
+# 
+# library(XML)
+# url <- "https://www.opencodez.com/"
+# source <- readLines(url, encoding = "UTF-8")
+# parsed_doc <- htmlParse(source, encoding = "UTF-8")
+# xpathSApply(parsed_doc, path = '/html/body/div[2]/div/div/div/div[1]/div[1]/article[1]/header/h2/a', xmlValue)
+# 
+# 
 
 
 ```
