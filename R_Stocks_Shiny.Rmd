@@ -145,15 +145,16 @@ my_index <- c('^GSPC','^DJI','^GDAXI','^N225','^IXIC','^FTSE','^N100','^IBEX')
 
 
 
-initial_date="2010-01-01" #year(initial_date)
+initial_date="2007-01-01" #year(initial_date)
+ending_date = today()     #IMPORTANT: Historical inflation data on the current year might be unavailable
+
 #ending_date="2023-01-14"
-ending_date="2022-12-31" #IMPORTANT: Historical inflation data on the current year might be unavailable
+#ending_date="2022-12-31" 
 
 
 
 ##### tabpanel -> Stock Analysis ##### 
       df_historical <- yf_get(tickers = test_ticker,          ### yfr ###
-                              #first_date= "1960-01-01",
                               #last_date= Sys.Date()-1,
                               first_date= initial_date,
                               last_date= ending_date,
@@ -282,21 +283,23 @@ ending_date="2022-12-31" #IMPORTANT: Historical inflation data on the current ye
         
 
 ##### tabpanel -> Portfolio Analysis ##### 
+      
+        
         
         
 #inflation & money input (priceR)
-Year <- (year(initial_date)-1):(year(ending_date)-1) #2000 to 2021
+Year <- (year(initial_date)-1):(year(ending_date)-1) 
 nominal_prices <- rep(1,length(Year))
 
 df_inflation <- data.frame(Year, nominal_prices)
-df_inflation$in_2020_dollars_factor <- adjust_for_inflation(nominal_prices, Year, "US", to_date = (year(ending_date)-1)) ###PriceR###
+df_inflation$in_2020_dollars_factor <- adjust_for_inflation(nominal_prices, Year, "US", to_date = (year(ending_date)-2)) ###PriceR###
 
 
 df_inflation <- mutate(df_inflation,
                          yearly_inflation = 100*( lag(in_2020_dollars_factor)/in_2020_dollars_factor -1)
                             )%>% drop_na()
         
-        
+df_inflation[nrow(df_inflation) + 1,] <- c(2023, 1,0.95,1)        
         
 
 ##### tabpanel -> Indexes ##### 
@@ -344,10 +347,16 @@ df_inflation <- mutate(df_inflation,
       # 
       # colnames(exc_rate)[which(names(exc_rate) == "date")] <- "ref_date"
       # colnames(exc_rate)[2] <- "ratio"
+      
+      
+      
+##### tabpanel -> Inflation ##### 
+      
+      
 ```
 
 
-```{r dashboard interactive v1.5}
+```{r dashboard interactive v1.6}
 
 #min_year = 1962
 #max_year = 2022
@@ -479,7 +488,7 @@ if (interactive()) {
                          
                             sliderInput("years_portf",
                                         label = h3("Years investing"),
-                                        min = min_year, max = max_year-1, value = c(2000, 2021)),
+                                        min = min_year, max = max_year-1, value = c(2010, 2020)),
                             sliderInput("year_yoc",
                                 "YoC looking from the year (TODAY*)",
                                 min = min_year, max = max_year-1, value = 2021,width = "90%"),
@@ -496,6 +505,8 @@ if (interactive()) {
                                         width = NULL,
                                         size = NULL
                                       ),
+                            checkboxInput("yearly_dca", "Yearly DCA instead of Full Period", FALSE),
+
                             
                             
                            ),
@@ -517,14 +528,16 @@ if (interactive()) {
                               plotlyOutput('CF_hist'),
                                 br(),
                               DTOutput('DCA_DF'),
-                              DTOutput('DCA_DF_v2'),
+                              #DTOutput('DCA_DF_v2'),
+                              #DTOutput('DCA_DF_v3'),
                               plotlyOutput('DCA_Portfolio'),
                                 )
                               )
                       ) #end main panel (currencies)
            ) #end sidebarLayout (currencies)
      
-                 ), #tab panel end (Portfolio Analysis)
+                 ), #end tab panel end (Portfolio Analysis)
+       #consider a TAB for dividend RE-INVEsTING
        tabPanel("Indexes", 
             sidebarLayout(
                sidebarPanel(width = 3, 
@@ -948,7 +961,7 @@ if (interactive()) {
              ### Dataframes ### 
             
             hist_price_infl_filtered_interactive <- reactive ({
-              # 
+               
               # df_inflation$money_input_infl <-input$money_in_portf/df_inflation$in_2020_dollars_factor
               #   df_inflation$money_input_infl_year <-  length(unique(input$selected_tickers_portf))*input$money_in_portf/df_inflation$in_2020_dollars_factor 
                 
@@ -1007,30 +1020,7 @@ df_inflation$money_input_infl_year <- input$money_in_portf/df_inflation$in_2020_
         })
             
             
-          DCA_df_divs_interactive_v2  <- reactive ({
-                                            
-        
-          DCA_df_divs <- left_join(DCA_df_interactive(), divs_agg %>% group_by(ticker), by=c('ticker'='ticker')) 
-          
-  
-      
-          DCA_df_hist <- left_join(DCA_df_divs, df_historical, by=c('ticker'='ticker', 'Year_div'='ref_date_year')) 
-          
-         
-         DCA_df_hist$ticker_dca <- paste('DCA',DCA_df_hist$ticker)
-        
-        # DCA_df_divs$invested <- DCA_df_divs$Stocks*DCA_df_divs$DCA
-        # DCA_df_divs$div_cash_flow <- DCA_df_divs$Stocks*DCA_df_divs$div
-        # DCA_df_divs$YoC_Ticker <- ((DCA_df_divs$div_cash_flow)/(DCA_df_divs$invested)+1)*100-100 
-        
-            
-          return( 
-           DCA_df_hist 
-                  )
-        })
-            
-            
-            
+
             
             dfz_interactive <-reactive({
               
@@ -1039,7 +1029,8 @@ df_inflation$money_input_infl_year <- input$money_in_portf/df_inflation$in_2020_
             historical_CF <- list()
             
             
-             for ( j in input$years_portf[1]:input$years_portf[2] ) {
+             #for ( j in input$years_portf[1]:input$years_portf[2] ) {
+              for ( j in input$years_portf[1]:input$year_yoc ) {
                    
                                                    
                 DCA_df_divs <- left_join(DCA_df_interactive(), divs_agg %>% group_by(ticker) %>% filter( Year_div == j)  , by=c('ticker'='ticker')) 
@@ -1064,7 +1055,9 @@ df_inflation$money_input_infl_year <- input$money_in_portf/df_inflation$in_2020_
               historical_yield =unlist(historical_yield)
               
               historical_CF =unlist(historical_CF)
-              yearz =  input$years_portf[1]:input$years_portf[2]
+              
+              # yearz =  input$years_portf[1]:input$years_portf[2]
+              yearz =  input$years_portf[1]:input$year_yoc
               
               dfz = data.frame(historical_yield,historical_CF,yearz)
               return(dfz)
@@ -1072,12 +1065,54 @@ df_inflation$money_input_infl_year <- input$money_in_portf/df_inflation$in_2020_
             })
             
             
+            DCA_Portfolio_DF <-reactive({
+              
+                       
+                     aux <-   filter(df_historical[df_historical$ticker %in% input$selected_tickers_portf ,],
+                               year(ref_date) >= input$years_portf[1] &
+                               year(ref_date) <= input$years_portf[2]
+                               )
+                           
+              
+                      if(input$yearly_dca == TRUE){
+                            DCA_Portfolio_DF <-  left_join(
+                              aux %>%
+                                                   dplyr::rename(Historical_Price = price_close),
+                              aux[,c("ticker","price_close","ref_date_year")] %>%
+                                                   group_by(ticker, ref_date_year) %>%
+                                                   summarise_at(.vars = c("price_close"), .funs = mean) %>%
+                                                   dplyr::rename(DCA = price_close),
+                               by=c('ticker'='ticker', 'ref_date_year'='ref_date_year')
+                              )
+                      }else{
+                        DCA_Portfolio_DF <-  left_join(
+                              aux %>%
+                                                   dplyr::rename(Historical_Price = price_close),
+                              aux[,c("ticker","price_close","ref_date_year")] %>%
+                                                   group_by(ticker) %>%
+                                                   summarise_at(.vars = c("price_close"), .funs = mean) %>%
+                                                   dplyr::rename(DCA = price_close),
+                               by=c('ticker'='ticker')
+                              )
+                      }
+                    
+                    
+                    DCA_Portfolio_DF$ticker_dca <- paste('DCA',DCA_Portfolio_DF$ticker)
+                    
+                    return(DCA_Portfolio_DF)
+              
+            })
+            
+            
             ### TABLES ###
             
-            output$DCA_DF = renderDT(DCA_df_divs_interactive())
+            output$DCA_DF = renderDT(DCA_df_divs_interactive()
+                                     )
             
+          
             
-           output$DCA_DF_v2 = renderDT( DCA_df_divs_interactive_v2())
+
+            
             
             ### GRAPHS ###
             
@@ -1102,7 +1137,7 @@ df_inflation$money_input_infl_year <- input$money_in_portf/df_inflation$in_2020_
               
                      plot_ly(hist_price_infl_filtered_interactive(), type = 'bar')%>%
                                         add_trace(x = ~ym, y = ~Stocks, name = ~ticker)  %>%   
-                    layout(title = "<b>Number of stocks that were bought<b>",
+                    layout(title = "<b>Stocks Bought Over Time<b>",
                            xaxis = list(title = 'Date'), 
                             yaxis = list(title = 'Stocks Bought'), legend = list(title=list(text='<b> Tickers </b>')))
               
@@ -1155,7 +1190,10 @@ df_inflation$money_input_infl_year <- input$money_in_portf/df_inflation$in_2020_
                  
             plot_ly() %>% 
                   add_trace(data= dfz_interactive(), x = ~yearz, y = ~historical_CF, name = "Portfolio CF", type = "bar") %>%
+                    add_trace(data= dfz_interactive() %>% mutate(cum_div = cumsum(historical_CF)) 
+                              , name="Cumulative Dividend", x = ~yearz, y = ~cum_div, mode = "lines+markers", type = "scatter") %>%
                   add_trace(data= aggregate(money_input_infl ~ Year, data = hist_price_infl_filtered_interactive(), FUN = sum), name="Monetary Input", x = ~Year, y = ~money_input_infl, mode = "lines+markers", type = "scatter") %>%   
+                     add_trace(data= aggregate(money_input_infl ~ Year, data = hist_price_infl_filtered_interactive(), FUN = sum)  %>% mutate(cum_money_input = cumsum(money_input_infl)), name="Cumulative Monetary Input", x = ~Year, y = ~cum_money_input, mode = "lines+markers", type = "scatter") %>%   
                   layout(
                                   title = "<b>Historical CF vs Monetary Input<b>",
                                   xaxis = list(title="Year"),
@@ -1168,24 +1206,23 @@ df_inflation$money_input_infl_year <- input$money_in_portf/df_inflation$in_2020_
                 
                 
                 output$DCA_Portfolio <- renderPlotly({
-# 
-#                    plot_ly(DCA_df_divs_interactive_v2() ) %>%
-#             add_trace(x = ~Year_div, y = ~DCA, type = 'scatter', mode = "lines", name = ~ticker)%>%
-#                         layout(title = '<b> DCA <b>', xaxis = list(title = 'Date'),
-#                                  yaxis = list(title = 'Price ($)'), legend = list(title=list(text='<b> Ticker </b>')))
+
                   
-            #       
-            #        plot_ly(DCA_df_divs_interactive_v2() ) %>%
-            # add_trace(x = ~ref_date, y = ~DCA, type = 'scatter', mode = "lines", name = ~ticker)%>%
-            #             layout(title = '<b> DCA <b>', xaxis = list(title = 'Date'),
-            #                      yaxis = list(title = 'Price ($)'), legend = list(title=list(text='<b> Ticker </b>')))
+          if(input$yearly_dca == TRUE){
                   
-                  
-                   plot_ly(DCA_df_divs_interactive_v2() ) %>%
-            add_trace(x = ~ref_date, y = ~price_close, type = 'scatter', mode = "lines", name = ~ticker)%>%
-          add_trace(x = ~ref_date, y = ~DCA, type = 'scatter', mode = "lines", name = ~ticker_dca)%>%
-                        layout(title = '<b> DCA <b>', xaxis = list(title = 'Date'),
-                                 yaxis = list(title = 'Price ($)'), legend = list(title=list(text='<b> Ticker </b>')))
+                   plot_ly( DCA_Portfolio_DF()  ) %>%
+                      add_trace(x = ~ref_date, y = ~Historical_Price, type = 'scatter', mode = "lines", name = ~ticker)%>%
+                    add_trace(x = ~ref_date, y = ~DCA, type = 'scatter', mode = "lines", name = ~ticker_dca)%>%
+                                  layout(title = '<b> DCA (Yearly) <b>', xaxis = list(title = 'Date'),
+                                           yaxis = list(title = 'Price ($)'), legend = list(title=list(text='<b> Ticker </b>')))
+          }else{
+            
+            plot_ly( DCA_Portfolio_DF()  ) %>%
+                      add_trace(x = ~ref_date, y = ~Historical_Price, type = 'scatter', mode = "lines", name = ~ticker)%>%
+                    add_trace(x = ~ref_date, y = ~DCA, type = 'scatter', mode = "lines", name = ~ticker_dca)%>%
+                                  layout(title = '<b> DCA (Full Period)<b>', xaxis = list(title = 'Date'),
+                                           yaxis = list(title = 'Price ($)'), legend = list(title=list(text='<b> Ticker </b>')))
+          }
          
                })
                 

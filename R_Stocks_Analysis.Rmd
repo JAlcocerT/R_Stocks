@@ -805,6 +805,10 @@ df_tickers_inflation <- df_tickers %>% filter(ref_date <= '2021-12-31')
 # 
 # 
 
+library(priceR)
+
+#show_countries()
+
 Year <- 2000:2021
 nominal_prices <- rep(1,length(Year))
 
@@ -841,7 +845,69 @@ plot_ly(df_inflation) %>%
 #            aes(x=year, y=in_202x_dollars_factor)) + geom_line()
 
 
+
+
+
+
+
+
 ```
+
+```{r inflation data - priceR with trycatch - test }
+
+
+
+# R program illustrating error handling
+# Applying tryCatch
+
+# 
+# a=0
+# 
+# tryCatch(               
+#  
+#   # Specifying expression
+#   expr = {               
+#           
+#       df_inflation$in_202x_dollars_factor <- adjust_for_inflation(nominal_prices, Year, "US", to_date = 2023) #PriceR
+#   
+#     print("Everything was fine.")
+#   },
+#   # Specifying error message
+#   error = function(e){         
+#     print(paste("There was an error message. Then considering one year less for inflation:","2022"))
+#     
+#        tryCatch(  
+#       
+#       expr = {    
+#         
+#         a=a+1
+#                  Year <- 2000:2022
+#             nominal_prices <- rep(1,length(Year))
+#             df_inflation <- data.frame(Year, nominal_prices)
+#               df_inflation$in_202x_dollars_factor <- adjust_for_inflation(nominal_prices, Year, "US", to_date = 2022) #PriceR
+#               print("Everything was fine for 2022.")
+#             },
+#       
+#        # Specifying second error message
+#           error = function(e){         
+#             print(paste("There was an error message for 2022 too. Then considering one year less for inflation:","2021"))
+#             
+#             a=a+1
+#             Year <- 2000:2021
+#             nominal_prices <- rep(1,length(Year))
+#             df_inflation <- data.frame(Year, nominal_prices)
+#             df_inflation$in_202x_dollars_factor <- adjust_for_inflation(nominal_prices, Year, "US", to_date = 2021) #PriceR
+#           })
+#   },
+#   finally = {            
+#     print("finally Executed")
+#     df_inflation <- mutate(df_inflation, inflation_level = ( lag(in_202x_dollars_factor)/in_202x_dollars_factor -1)*100 )
+#   }
+# )
+
+
+```
+
 
 ```{r stock value & inflation correction - yfR & priceR}
 
