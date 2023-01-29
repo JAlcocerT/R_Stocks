@@ -138,9 +138,6 @@ my_portfolio$Ticker <- sub("NASDAQ:", "", my_portfolio$Ticker)
 my_portfolio$Ticker <- sub("NYSE:", "", my_portfolio$Ticker)
 
 test_ticker <- my_portfolio$Ticker
-
-
-
 ```
 
 ```{r Portfolio - read from list}
@@ -1149,7 +1146,7 @@ df_historical$yieldv3 <- df_historical$yieldv2*c(rep(2,6601),rep(1,13273-6602))
 
 test_ticker <- c('NKE','PG','mc.pa','tyo.4502','t.to')
 
-test_ticker <- c('BMY')
+#test_ticker <- c('BMY')
 
 
 divs <- getDividends(test_ticker[1], 
@@ -1208,7 +1205,11 @@ divs_agg <- setNames( aggregate(div ~ year(date) + ticker, data = divs, FUN = su
         name = ~ticker,
         color=~ticker
       )  %>%
-        layout(title = 'Dividend Evolution')
+        layout(title = "<b>Dividend Evolution</b>",
+                           xaxis = list(title = 'Year'), 
+                            yaxis = list(title = 'USD ($)'), legend = list(title=list(text='<b> Tickers </b>')))
+    
+    
     
 
 
@@ -1254,7 +1255,9 @@ for(i in 6:nrow(divs_agg_ticker)) {
     
     plot_ly(growth_df, type = 'scatter', mode = 'lines')%>%
       add_trace(x = ~year_growth, y = ~growth_hist, name = ~Ticker) %>%
-        layout(title = 'Dividend Growth')
+                    layout(title = "<b>Dividend Growth</b>",
+                           xaxis = list(title = 'Growth YoY (%)'), 
+                            yaxis = list(title = 'USD ($)'), legend = list(title=list(text='<b> Tickers </b>')))
     
     
     
@@ -1266,13 +1269,16 @@ for(i in 6:nrow(divs_agg_ticker)) {
 
 
 
-test_ticker <- c('NKE','PG','JNJ')
+test_ticker <- c('NKE','PG','JNJ','BMY')
 
+ini_date="2000-01-01"
 
 
 divs <- getDividends(test_ticker[1], 
-             from = "1970-01-01",
-             to = Sys.Date()-30, 
+             #from = "1970-01-01",
+             from = ini_date,
+             #to = Sys.Date()-30,
+             to = Sys.Date(),
              src = "yahoo", 
              auto.assign = TRUE, 
              auto.update = TRUE, 
@@ -1293,8 +1299,10 @@ divs$ticker <- rep(test_ticker[1],nrow(divs))
 for(i in 2:length(test_ticker)) {
 
   aux <- getDividends(test_ticker[i], 
-             from = "1970-01-01",
-             to = Sys.Date()-30, 
+             #from = "1970-01-01",
+             from = ini_date,
+             #to = Sys.Date()-30,
+             to = Sys.Date(),
              src = "yahoo", 
              auto.assign = TRUE, 
              auto.update = TRUE, 
@@ -1321,17 +1329,40 @@ aggregate(divs$div, by=list(Year_div=year(divs$date)), FUN=sum)
 divs_agg <- setNames( aggregate(div ~ year(date) + ticker, data = divs, FUN = sum, na.rm = TRUE),
                     c("Year_div","ticker","div"))
 
-    
-    plot_ly(
-      data = divs_agg,
-      x = ~Year_div,
-      y = ~div,
-      type = "bar",
-      name = ~ticker,
-      color=~ticker
-    )  %>%
-        layout(title = 'Dividend Evolution')
-
+ 
+      plot_ly(
+        data = divs_agg,
+        x = ~Year_div,
+        y = ~div,
+        type = "bar",
+        name = ~ticker,
+        color=~ticker
+      )  %>%
+        layout(title = "<b>Dividend Evolution</b>",
+                           xaxis = list(title = 'Year'), 
+                            yaxis = list(title = 'USD ($)'), legend = list(title=list(text='<b> Tickers </b>')))
+      
+      
+      
+     
+      plot_ly(
+        data = divs_agg,
+        x = ~Year_div,
+        y = ~div,
+        type = "bar",
+        name = ~ticker,
+        color=~ticker
+      ) %>%
+          add_trace( data= divs_agg %>% group_by(ticker) %>%  dplyr::mutate(cum_div_ticker = cumsum(div)) %>% mutate(Cum_div_t = paste("Cumulative Div",divs_agg$ticker)) 
+                              , name=~Cum_div_t, x = ~Year_div, 
+                              y = ~cum_div_ticker,
+                              mode = "lines+markers",
+                              type = "scatter") %>%
+        layout(title = "<b>Dividend Evolution</b>",
+                           xaxis = list(title = 'Year'), 
+                            yaxis = list(title = 'USD ($)'), legend = list(title=list(text='<b> Tickers </b>')))
+      
+      
 
 ### DIvs growth ###
 
@@ -1374,10 +1405,16 @@ for(i in (n+1):nrow(divs_agg_ticker)) {
     plot_ly(growth_df, type = 'scatter', mode = 'lines')%>%
       add_trace(x = ~year_growth, y = ~growth_hist, name = ~Ticker) %>%   
       layout(title =sprintf("Dividend growth %s-y ", n))
-
-
+    
+    
+   
 ```
 
+
+
+```{r dividend analysys (amount & growth) - yfr & quantmod - interactive ready}
+
+```
 
 
 ```{r dividend growth vs inflation - quantmod & priceR}
@@ -1429,7 +1466,7 @@ growth_df <-  rbind(growth_df,
 
 ```{r historical yield - quantmod & yFr - test}
 
-test_ticker <- 'JNJ'
+test_ticker <- 'BMY'
 
 hist_splits <- quantmod::getSplits(test_ticker)
 
@@ -2340,6 +2377,717 @@ plot_ly() %>%
 
 
 
+```{r YoC - quantmod & yFr & priceR - multi ticker - RE-INVESTING - interactive ready}
+
+
+
+taxed <- 0.85
+test_ticker <- c('JNJ','PG','PFE','T')
+
+invest = 1000 #it will assume that all given tickers are included in the hist_price data frame from the given initial_date (!!!)
+
+
+initial_date="2005-01-01" #year(initial_date)
+ending_date="2021-12-31"
+
+  initial_investment_date <- "2005-01-01"
+  final_investment_date <- "2008-12-31"
+
+
+
+#inflation & money input (priceR)
+Year <- (year(initial_date)-1):(year(ending_date)) #2018 to 2021
+
+#nominal_prices <- rnorm(10, mean=10, sd=3)
+nominal_prices <- rep(1,length(Year))
+
+df_inflation <- data.frame(Year, nominal_prices)
+df_inflation$in_2020_dollars_factor <- adjust_for_inflation(nominal_prices, Year, "US", to_date = (year(ending_date))) ###PriceR###
+
+
+#if API error: assume no inflation to continue 
+#df_inflation$in_2020_dollars_factor <-  rep(1,length(Year))
+
+
+df_inflation <- mutate(df_inflation,
+                         yearly_inflation = 100*( lag(in_2020_dollars_factor)/in_2020_dollars_factor -1)
+                            )%>% drop_na()
+
+
+
+
+df_inflation$money_input_infl <-invest/length(unique(test_ticker))/df_inflation$in_2020_dollars_factor #monthly input corrected by inflation and already divided by ticker number (!!!) so it assumes that all tickers are available every year considered 
+#Yearly money input inflation corrected per ticker
+
+
+
+df_inflation$money_input_infl_year <- invest/df_inflation$in_2020_dollars_factor 
+
+
+
+#Not all the years the investment were happening ->
+
+df_inflation[df_inflation$Year<year(initial_investment_date)  ,]$money_input_infl = 0
+df_inflation[df_inflation$Year<year(initial_investment_date)  ,]$money_input_infl_year = 0
+
+
+df_inflation[df_inflation$Year>year(final_investment_date)  ,]$money_input_infl = 0
+df_inflation[df_inflation$Year>year(final_investment_date)  ,]$money_input_infl_year = 0
+
+
+
+
+## historical price (yfR)
+
+df_historical <- yf_get(tickers = test_ticker,     ### yfR ###
+                        first_date= initial_date,
+                        last_date= ending_date,
+                        thresh_bad_data = 0.2,
+                        freq_data="monthly") %>% select(ticker, price_close, ref_date) 
+df_historical$ym <- format(as.Date(df_historical$ref_date), "%Y-%m")
+df_historical$Year <- as.integer(format(as.Date(df_historical$ref_date), "%Y"))
+
+
+       plot_ly(df_historical, type = 'scatter', mode = 'lines')%>%
+                          add_trace(x = ~ym, y = ~price_close, name = ~ticker)%>%   
+                          layout(title ="Ticker Value Evolution")
+      
+hist_price_infl <- left_join(df_historical, df_inflation, by=c('Year')) 
+hist_price_infl$Stocks <- hist_price_infl$money_input_infl/hist_price_infl$price_close          #no round down !!!!!!!!
+#                                                                                               #round down
+
+
+       plot_ly(hist_price_infl, type = 'bar')%>%
+                          add_trace(x = ~ym, y = ~Stocks, name = ~ticker)  %>%   
+                          layout(title ="Number of stocks that were bought")
+       
+       
+       plot_ly(hist_price_infl, type = 'bar')%>%
+                          add_trace(x = ~Year, y = ~Stocks, name = ~ticker)  %>%   
+                          layout(title ="Number of stocks that were bought  - NO RE-INVESTMENT")
+       
+       
+       
+       
+       
+   hist_price_infl_group = hist_price_infl %>% group_by(ticker ) %>% dplyr::mutate(cum_stocks_ticker = cumsum(replace_na(Stocks, 0))) %>% select(ticker , ym , Year, cum_stocks_ticker)
+   
+   
+
+# 
+#               plot_ly(  hist_price_infl %>% group_by(ticker ) %>% dplyr::mutate(cum_stocks_ticker = cumsum(Stocks)) %>% select(ticker , ym , cum_stocks_ticker),
+#                        type = 'bar') %>%
+#                           add_trace(x = ~ym,
+#                                     y = ~cum_stocks_ticker,
+#                                     name = ~ticker)  %>%
+#                           layout(title ="Number of stocks that were bought (Cumulative per Ticker)")
+
+              
+   
+              plot_ly(  hist_price_infl_group,
+                       type = 'bar') %>%
+                          add_trace(x = ~ym,
+                                    y = ~cum_stocks_ticker,
+                                    name = ~ticker)  %>%   
+                          layout(title ="Number of stocks that were bought (Cumulative per Ticker) - NO RE-INVESTMENT")
+              
+                 
+                 
+              #           
+              # plot_ly(  hist_price_infl_group %>% group_by(ticker, Year) %>% filter(cum_stocks_ticker == max(cum_stocks_ticker)),
+              #          type = 'bar') %>%
+              #             add_trace(x = ~Year,
+              #                       y = ~cum_stocks_ticker,
+              #                       name = ~ticker)  %>%   
+              #             layout(title ="Number of stocks that were bought (Cumulative per Ticker) - NO RE-INVESTMENT")
+              # 
+              # 
+ 
+       
+### historical divs (yfR)
+
+
+divs <- getDividends(test_ticker[1],  ### QuandMod ###
+             from = initial_date,
+             to = ending_date, 
+             src = "yahoo", 
+             auto.assign = TRUE, 
+             auto.update = TRUE, 
+             verbose = FALSE)
+
+
+divs <- data.frame(date=index(divs), coredata(divs))
+colnames(divs) <- c('date','div')
+
+
+
+
+### Divs Evolution ###
+
+divs$ticker <- rep(test_ticker[1],nrow(divs))
+
+
+for(i in 2:length(test_ticker)) {
+
+  aux <- getDividends(test_ticker[i],  ### QuandMod ###
+             from = initial_date,
+             to = ending_date, 
+             src = "yahoo", 
+             auto.assign = TRUE, 
+             auto.update = TRUE, 
+             verbose = FALSE)
+
+
+aux <- data.frame(date=index(aux), coredata(aux))
+colnames(aux) <- c('date','div')
+
+aux$ticker <- rep(test_ticker[i],nrow(aux))
+
+#append
+divs <- rbind(divs, aux)
+ 
+}
+
+
+
+### GROUP BY YEAR & ticker
+
+divs_agg <- setNames( aggregate(div ~ year(date) + ticker, data = divs, FUN = sum, na.rm = TRUE),
+                    c("Year_div","ticker","div")) ##aggregated per Year & Ticker
+    
+
+
+                
+              plot_ly(divs_agg,
+                      type = 'bar') %>%
+                          add_trace(x = ~Year_div,
+                                    y = ~div,
+                                    name = ~ticker)  %>%   
+                          layout(title ="Historical Div (per ticker)")
+
+   
+    
+      #(!!!)
+      length(unique( divs_agg[divs_agg$Year_div== year(initial_date),]$ticker)) < length(unique(test_ticker)) 
+      #if true some stocks are missing in the first year selected
+      length(unique( divs_agg[divs_agg$Year_div== year(initial_investment_date),]$ticker)) < length(unique(test_ticker))
+      #(!!!)
+      
+      
+      
+### Re -  Investing  Logic ###      
+
+      
+re_invest_df = hist_price_infl %>% group_by(ticker) %>% dplyr::mutate(yearly_stocks = cumsum(replace_na(Stocks, 0))) %>% select(ticker , Year, yearly_stocks) %>% group_by(ticker, Year) %>% filter(yearly_stocks == max(yearly_stocks))  %>% filter(Year == year(initial_investment_date))
+
+
+divs_due_to_stocks_previous_years = sum(as.data.frame(left_join(re_invest_df,
+          divs_agg[divs_agg$Year_div == year(initial_investment_date)+1  ,],
+          by=c('ticker'='ticker')) %>% mutate(Div_income = div*yearly_stocks*taxed))$Div_income)   
+      
+               
+
+df_inflation_reinvest  = df_inflation #to update the money input for the tickets, based on the already bought stocks and their divs
+
+
+old <- Sys.time() # get start time
+
+
+ for ( j in  seq.int(year(initial_investment_date)+1,year(final_investment_date)) ) {
+   
+   
+   # CONSIDERATION: the first year no dividend will be generated, the second year, the stocks already acquired on Y1, will be generating additional income, that will be applied as EXTRA monetary input (proportionally every month, so /12) - assumming dividends come regularly, no in batches every Q.
+   
+   
+   # as.data.frame(df_inflation %>% filter( Year == 2012))$money_input_infl 
+   
+   #Yearly:
+   #as.data.frame(df_inflation %>% filter( Year == j))$money_input_infl_year+ divs_due_to_stocks_previous_years/12
+   
+   #For every ticket, the new inout of money:
+   #as.data.frame(df_inflation %>% filter( Year == j))$money_input_infl + divs_due_to_stocks_previous_years/12/length(unique(test_ticker))
+   
+
+# df_inflation_reinvest[df_inflation_reinvest$Year ==2012  ,]$money_input_infl =   as.data.frame(df_inflation %>% filter( Year == 2012))$money_input_infl + divs_due_to_stocks_previous_years/12/length(unique(test_ticker))
+
+   
+     
+
+
+
+df_inflation_reinvest[df_inflation_reinvest$Year == j  ,]$money_input_infl =   as.data.frame(df_inflation %>% filter( Year == j))$money_input_infl + divs_due_to_stocks_previous_years/12/length(unique(test_ticker))
+
+
+df_inflation_reinvest[df_inflation_reinvest$Year == j  ,]$money_input_infl_year = as.data.frame(df_inflation %>% filter( Year == j))$money_input_infl_year + divs_due_to_stocks_previous_years/12
+  
+
+
+  
+hist_price_infl_reinvest <- left_join(df_historical %>% filter( Year == j),
+                                      df_inflation_reinvest %>% filter( Year == j) %>% select(Year, money_input_infl),
+                                      by=c('Year')) 
+
+hist_price_infl_reinvest$Stocks <- hist_price_infl_reinvest$money_input_infl/hist_price_infl_reinvest$price_close
+
+       
+
+# 
+# 
+# hist_price_infl_reinvest %>% group_by(ticker) %>% dplyr::mutate(yearly_stocks = cumsum(replace_na(Stocks, 0))) %>% select(ticker , Year, yearly_stocks) %>% group_by(ticker, Year) %>% filter(yearly_stocks == max(yearly_stocks))  
+
+
+       
+
+  re_invest_df <-   rbind(re_invest_df,
+                          hist_price_infl_reinvest %>% group_by(ticker) %>% dplyr::mutate(yearly_stocks = cumsum(replace_na(Stocks, 0))) %>% select(ticker , Year, yearly_stocks) %>% group_by(ticker, Year) %>% filter(yearly_stocks == max(yearly_stocks))  
+                          )
+      
+  
+  
+
+#Tthe total amount of the column Div_income can be used to buy further stocks (NOW ALL THAT YOU EVER BOUGHT) =>        
+divs_due_to_stocks_previous_years = sum(as.data.frame(
+                  left_join( re_invest_df %>% group_by(ticker) %>% dplyr::summarise(yearly_stocks = sum(yearly_stocks)),
+                            divs_agg[divs_agg$Year_div == j  ,],
+                            by=c('ticker'='ticker') ) %>%
+                  mutate(Div_income = div*yearly_stocks*taxed))$Div_income) 
+print(j)
+ } #end for (!)
+
+
+
+
+
+
+re_invest_df$cum_stocks_ticker =   as.data.frame(re_invest_df %>% group_by(ticker ) %>% 
+                                dplyr::mutate(cum_stocks_ticker = cumsum(replace_na(yearly_stocks, 0))) 
+                              %>% select(ticker , Year, cum_stocks_ticker))$cum_stocks_ticker
+
+
+for ( z in  seq.int(year(final_investment_date)+1,year(ending_date)) ) {                    
+
+  #re_invest_df %>% filter (Year==j)
+  
+   re_invest_df <-  rbind( re_invest_df,
+                          re_invest_df %>% filter (Year==j) %>% 
+                                dplyr::mutate(Year = z)  %>% 
+                                dplyr::mutate(yearly_stocks  = 0)
+                           )
+      
+  
+}
+
+new <- Sys.time() - old # calculate difference
+print(new) # print in nice format
+
+
+#money input comparison
+              
+                 plot_ly() %>% 
+                    add_trace(data= df_inflation, name="Yearly Money input - No Re-inv", x = ~Year, y = ~money_input_infl_year, mode = "lines+markers", type = "scatter") %>%
+                  add_trace(data= df_inflation_reinvest, name="Yearly Money input - Re-inv", x = ~Year, y = ~money_input_infl_year, mode = "lines+markers", type = "scatter") %>%   
+                  layout(
+                                  title = "<b>Historical Monetary Input<b>",
+                                  xaxis = list(title="Year"),
+                                  yaxis = list(title="($)")
+                        )
+
+#number of stocks bought comparison
+
+                    # plot_ly() %>% 
+                    # add_trace(data= hist_price_infl %>% group_by(ticker,Year) %>% dplyr::summarise(yearly_stocks = sum(Stocks)),
+                    #           name="No Re-inv",
+                    #           x = ~Year, y = ~yearly_stocks, name = ~ticker,
+                    #           mode = "lines+markers", type = "scatter") %>%
+                    # add_trace(data= re_invest_df,
+                    #           name="Re-inv",
+                    #         x = ~Year, y = ~yearly_stocks,
+                    #         mode = "lines+markers", type = "scatter") %>%   
+                    # layout(
+                    #               title = "<b>Stocks Bought<b>",
+                    #               xaxis = list(title="Year"),
+                    #               yaxis = list(title="Stocks")
+                    #     )
+                    
+                    fig1 <-   plot_ly() %>% 
+                                   add_trace(
+                                     data= hist_price_infl %>% group_by(ticker,Year) %>% 
+                                       dplyr::summarise(yearly_stocks = sum(Stocks)),
+                                    name= ~ticker,
+                                    x = ~Year, y = ~yearly_stocks, name = ~ticker,
+                                    mode = "lines+markers", type = "scatter")  %>%   
+                    layout(
+                                  xaxis = list(title="Year"),
+                                  #yaxis = list(title="Stocks",range = c(0,55))
+                                  yaxis = list(title="Stocks",range = c(0,  max(re_invest_df$yearly_stocks)*1.25 ))
+                        ) #stocks bought per year - no reinv
+                    
+                    
+                    fig2 <-  plot_ly() %>% 
+                                  add_trace(data = as.data.frame(re_invest_df),
+                                    x = ~Year, y = ~yearly_stocks,name= ~ticker,
+                                     type = "scatter", mode = "lines+markers") %>% 
+                                  #layout(yaxis = list(range = c(0,55)))
+                                  layout(yaxis = list(range = c(0,max(re_invest_df$yearly_stocks)*1.25 )))
+                        # stock bough per year - reinv
+                    
+                    annotations = list( 
+                                          list( 
+                                            x = 0.2,  
+                                            y = 1.0,  
+                                            text = "<b>Stocks Bought - No Re investment<b>",  
+                                            xref = "paper",  
+                                            yref = "paper",  
+                                            xanchor = "center",  
+                                            yanchor = "bottom",  
+                                            showarrow = FALSE 
+                                          ),  
+                                          list( 
+                                            x = 0.8,  
+                                            y = 1,  
+                                            text = "<b>Stocks Bought - Re investment<b>",  
+                                            xref = "paper",  
+                                            yref = "paper",  
+                                            xanchor = "center",  
+                                            yanchor = "bottom",  
+                                            showarrow = FALSE 
+                                          )
+                                        )
+                    
+                    subplot(fig1, fig2) %>% layout(annotations = annotations) 
+                    
+
+#cumulative stocks comparison
+                    
+
+                    # plot_ly() %>% 
+                    # add_trace(data=  hist_price_infl_group %>% group_by(ticker, Year) %>%
+                    #             filter(cum_stocks_ticker == max(cum_stocks_ticker)) %>% 
+                    #             dplyr::mutate(tickers = paste(ticker,'no-reinv')),
+                    #           x = ~Year, y = ~cum_stocks_ticker, name = ~tickers,
+                    #           mode = "markers", type = "scatter") %>%
+                    # add_trace(data= re_invest_df %>% group_by(ticker ) %>% 
+                    #             dplyr::mutate(cum_stocks_ticker = cumsum(replace_na(yearly_stocks, 0))) 
+                    #           %>% select(ticker , Year, cum_stocks_ticker)  
+                    #           %>% dplyr::mutate(tickers = paste(ticker,'Re- inv')),
+                    #         x = ~Year, y = ~cum_stocks_ticker, name = ~tickers,
+                    #         mode = "lines+markers", type = "scatter") %>%   
+                    # layout(
+                    #               title = "<b>HCumulative Stocks Comparison<b>",
+                    #               xaxis = list(title="Year"),
+                    #               yaxis = list(title="Stocks")
+                    #     )
+                     
+                     
+                    
+                    
+                      fig1 <-     plot_ly() %>% 
+                                      add_trace(data=  as.data.frame(hist_price_infl_group %>% group_by(ticker, Year) %>%
+                                      filter(cum_stocks_ticker == max(cum_stocks_ticker)) %>% 
+                                      dplyr::mutate(tickers = paste(ticker,'no-reinv')) ),
+                                    x = ~Year, y = ~cum_stocks_ticker, name = ~tickers,
+                                    mode = "lines+markers", type = "scatter") %>%
+                                layout(
+                                              xaxis = list(title="Year"),
+                                              #yaxis = list(title="Stocks",range = c(0,500))
+                                              yaxis = list(title="Stocks",range = c(0,max(re_invest_df$cum_stocks_ticker)*1.25))
+                                    )
+                      # stocks per ticker cumulative - no reinv
+                    
+                      
+                    # fig2 <-  plot_ly() %>% 
+                    #               add_trace(data = as.data.frame(re_invest_df %>% group_by(ticker ) %>% 
+                    #             dplyr::mutate(cum_stocks_ticker = cumsum(replace_na(yearly_stocks, 0))) 
+                    #           %>% select(ticker , Year, cum_stocks_ticker)  
+                    #           %>% dplyr::mutate(tickers = paste(ticker,'Re- inv')) ),
+                    #         x = ~Year, y = ~cum_stocks_ticker, name = ~tickers,
+                    #         mode = "lines+markers", type = "scatter")  %>%
+                    #             layout(
+                    #                           xaxis = list(title="Year"),
+                    #                           yaxis = list(title="Stocks",range = c(0,500))
+                    #                 )
+                      
+                       fig2 <-  plot_ly() %>% 
+                                  add_trace(data = as.data.frame(re_invest_df %>% dplyr::mutate(tickers = paste(ticker,'Re- inv')) ),
+                            x = ~Year, y = ~cum_stocks_ticker, name = ~tickers,
+                            mode = "lines+markers", type = "scatter")  %>%
+                                layout(
+                                              xaxis = list(title="Year"),
+                                              #yaxis = list(title="Stocks",range = c(0,500))
+                                              yaxis = list(title="Stocks",range = c(0,max(re_invest_df$cum_stocks_ticker)*1.25))
+                                    ) ## stocks per ticker cumulative - no reinv
+                    
+                    annotations = list( 
+                                          list( 
+                                            x = 0.2,  
+                                            y = 1.0,  
+                                            text = "<b>Cumulative Stocks - No Re investment<b>",  
+                                            xref = "paper",  
+                                            yref = "paper",  
+                                            xanchor = "center",  
+                                            yanchor = "bottom",  
+                                            showarrow = FALSE 
+                                          ),  
+                                          list( 
+                                            x = 0.8,  
+                                            y = 1,  
+                                            text = "<b>Cumulative Stocks - Re investment<b>",  
+                                            xref = "paper",  
+                                            yref = "paper",  
+                                            xanchor = "center",  
+                                            yanchor = "bottom",  
+                                            showarrow = FALSE 
+                                          )
+                                        )
+                    
+                    subplot(fig1, fig2) %>% layout(annotations = annotations) 
+                    
+                    
+
+                  
+                    
+                    
+#dividend comparison       
+                    
+       
+                      fig1 <- plot_ly() %>% 
+                                      add_trace(data =  as.data.frame(
+                                         left_join(divs_agg,
+                              hist_price_infl_group %>% group_by(ticker, Year)
+                              %>% filter(cum_stocks_ticker == max(cum_stocks_ticker)), 
+                              by=c('ticker'='ticker','Year_div'='Year')) %>% 
+                                dplyr::mutate(dividend = cum_stocks_ticker*div) %>% 
+                         group_by( ticker, Year_div ) %>% filter(row_number()==1)  %>%  group_by(  Year_div ) 
+                         %>%  dplyr::summarise(Total_Yearly_Div_NoReinv = replace_na(sum(dividend),0))
+                      
+                                      ),
+                                    x = ~Year_div, y = ~Total_Yearly_Div_NoReinv,
+                                    mode = "lines+markers", type = "scatter") %>%
+                                layout(
+                                              xaxis = list(title="Year"),
+                                              yaxis = list(title="Stocks",range = c(0,40000))
+                                    )
+                    
+
+                    fig2 <-  plot_ly() %>% 
+                                  add_trace(data= as.data.frame(
+                                               left_join(divs_agg ,
+                                                      re_invest_df, 
+                                                      by=c('ticker'='ticker','Year_div'='Year'))  %>% 
+                                                 dplyr::mutate(dividend = cum_stocks_ticker*div) %>% 
+                                                 group_by( Year_div ) %>%
+                                                 dplyr::summarise(Total_Yearly_Div_Reinv = replace_na(sum(dividend),0))
+                                                      ),
+                            x = ~Year_div, y = ~Total_Yearly_Div_Reinv,
+                            mode = "lines+markers", type = "scatter")  %>%
+                                layout(
+                                              xaxis = list(title="Year"),
+                                              yaxis = list(title="Stocks",range = c(0,50000))
+                                    )
+                    
+                    annotations = list( 
+                                          list( 
+                                            x = 0.2,  
+                                            y = 1.0,  
+                                            text = "<b>Dividend Yearly - No Re investment<b>",  
+                                            xref = "paper",  
+                                            yref = "paper",  
+                                            xanchor = "center",  
+                                            yanchor = "bottom",  
+                                            showarrow = FALSE 
+                                          ),  
+                                          list( 
+                                            x = 0.8,  
+                                            y = 1,  
+                                            text = "<b>Dividend Yearly - Re investment<b>",  
+                                            xref = "paper",  
+                                            yref = "paper",  
+                                            xanchor = "center",  
+                                            yanchor = "bottom",  
+                                            showarrow = FALSE 
+                                          )
+                                        )
+                    
+                    subplot(fig1, fig2) %>% layout(annotations = annotations) 
+                    
+                    
+                    
+                          
+                      fig1 <- plot_ly() %>% 
+                                      add_trace(data =  as.data.frame(
+                                         left_join( divs_agg,
+                              hist_price_infl_group %>% group_by(ticker, Year)
+                              %>% filter(cum_stocks_ticker == max(cum_stocks_ticker)), 
+                              by=c('ticker'='ticker','Year_div'='Year')) %>% 
+                                dplyr::mutate(dividend = cum_stocks_ticker*div) %>% 
+                         group_by( ticker, Year_div ) %>% filter(row_number()==1)  
+                                      ),
+                                    x = ~Year_div, y = ~dividend, name = ~ticker,
+                                    mode = "none", type = "scatter", stackgroup = 'one') %>%
+                                layout(
+                                              xaxis = list(title="Year"),
+                                              yaxis = list(title="Stocks",range = c(0,10000))
+                                    )
+                    
+
+                    fig2 <-  plot_ly() %>% 
+                                  add_trace(data= as.data.frame(
+                                               left_join(divs_agg ,
+                                                      re_invest_df, 
+                                                      by=c('ticker'='ticker','Year_div'='Year'))  %>% 
+                                                 dplyr::mutate(dividend = cum_stocks_ticker*div) 
+                                                      ),
+                            x = ~Year_div, y = ~dividend, name = ~ticker,
+                            mode = "none", type = "scatter", stackgroup = 'one')  %>%
+                                layout(
+                                              xaxis = list(title="Year"),
+                                              yaxis = list(title="Stocks",range = c(0,10000))
+                                    )
+                    
+                    annotations = list( 
+                                          list( 
+                                            x = 0.2,  
+                                            y = 1.0,  
+                                            text = "<b>Dividend Yearly - No Re investment<b>",  
+                                            xref = "paper",  
+                                            yref = "paper",  
+                                            xanchor = "center",  
+                                            yanchor = "bottom",  
+                                            showarrow = FALSE 
+                                          ),  
+                                          list( 
+                                            x = 0.8,  
+                                            y = 1,  
+                                            text = "<b>Dividend Yearly - Re investment<b>",  
+                                            xref = "paper",  
+                                            yref = "paper",  
+                                            xanchor = "center",  
+                                            yanchor = "bottom",  
+                                            showarrow = FALSE 
+                                          )
+                                        )
+                    
+                    subplot(fig1, fig2) %>% layout(annotations = annotations) 
+                    
+                    
+                    
+                    
+                    
+# Differences: re-investing dividends and not doing it                    
+                    
+                    re_investing_gains = as.data.frame(
+                       left_join(divs_agg ,
+                              re_invest_df %>% group_by(ticker ) %>% 
+                                dplyr::mutate(cum_stocks_ticker = cumsum(replace_na(yearly_stocks, 0))), 
+                              by=c('ticker'='ticker','Year_div'='Year'))  %>% 
+                                dplyr::mutate(dividend = cum_stocks_ticker*div) %>% 
+                         group_by( Year_div ) %>%  dplyr::summarise(Total_Yearly_Div_Reinv = replace_na(sum(dividend),0))
+                      )$Total_Yearly_Div_Reinv                    /
+                     as.data.frame(
+                       left_join(divs_agg,
+                              hist_price_infl_group %>% group_by(ticker, Year)
+                              %>% filter(cum_stocks_ticker == max(cum_stocks_ticker)), 
+                              by=c('ticker'='ticker','Year_div'='Year')) %>% 
+                                dplyr::mutate(dividend = cum_stocks_ticker*div) %>% 
+                         group_by( Year_div ) %>%  dplyr::summarise(Total_Yearly_Div_NoReinv = replace_na(sum(dividend),0))
+                     )$Total_Yearly_Div_NoReinv
+                       
+                     
+                      
+                     
+                     
+                    plot_ly() %>% 
+                    add_trace(data = data.frame(Year=(year(initial_date)):(year(ending_date)),
+                                                re_investing_gains %>% replace(is.na(.), 0) ),
+                              x = ~Year, y = ~re_investing_gains,
+                              mode = "line+markers", type = "scatter") %>%
+                    layout(
+                                  title = "<b>Dividend Gap when Re-Investing<b>",
+                                  xaxis = list(title="Year"),
+                                  yaxis = list(title="Difference (%)")
+                        )
+                    
+                    
+# money input vs dividend (no-reinvest)
+                    
+                    
+          
+                 plot_ly() %>% 
+                    add_trace(data= df_inflation, name="Yearly Money input - No Re-inv",
+                              x = ~Year, y = ~money_input_infl_year*12, mode = "lines+markers", type = "scatter") %>%
+                    add_trace(data =  as.data.frame(
+                                         left_join(divs_agg,
+                              hist_price_infl_group %>% group_by(ticker, Year)
+                              %>% filter(cum_stocks_ticker == max(cum_stocks_ticker)), 
+                              by=c('ticker'='ticker','Year_div'='Year')) %>% 
+                                dplyr::mutate(dividend = cum_stocks_ticker*div) %>% 
+                         group_by( ticker, Year_div ) %>% filter(row_number()==1)  %>%  group_by(  Year_div ) 
+                         %>%  dplyr::summarise(Total_Yearly_Div_NoReinv = replace_na(sum(dividend),0))
+                      
+                                      ),
+                                    x = ~Year_div, y = ~Total_Yearly_Div_NoReinv,
+                                    name="Yearly Dividend - No Re-inv",
+                                    mode = "lines+markers", type = "scatter") %>%   
+                  layout(
+                                  title = "<b>Cash Flow - No re-inv<b>",
+                                  xaxis = list(title="Year"),
+                                  yaxis = list(title="($)")
+                        )          
+
+                    
+# money input vs dividend (reinvest)                                       
+                    
+                 
+                 plot_ly() %>% 
+                   add_trace(data= as.data.frame(
+                                               left_join(divs_agg ,
+                                                      re_invest_df, 
+                                                      by=c('ticker'='ticker','Year_div'='Year'))  %>% 
+                                                 dplyr::mutate(dividend = cum_stocks_ticker*div) %>% 
+                                                 group_by( Year_div ) %>%
+                                                 dplyr::summarise(Total_Yearly_Div_Reinv = replace_na(sum(dividend),0))
+                                                      ),
+                            x = ~Year_div, y = ~Total_Yearly_Div_Reinv, name="Yearly Dividend - No Re-inv",
+                            mode = "lines+markers", type = "scatter") %>% 
+                  add_trace(data= df_inflation_reinvest, name="Yearly Money input - Re-inv", x = ~Year, y = ~money_input_infl_year*12, mode = "lines+markers", type = "scatter") %>%   
+                  layout(
+                                  title = "<b>Cash Flow - re-inv<b>",
+                                  xaxis = list(title="Year"),
+                                  yaxis = list(title="($)")
+                        )
+                 
+                 
+# money input vs dividend (no-reinvest) CUMULATIVE                                       
+                    
+                 
+                 plot_ly() %>% 
+                   add_trace(data= as.data.frame(
+                                               left_join(divs_agg ,
+                                                      re_invest_df, 
+                                                      by=c('ticker'='ticker','Year_div'='Year'))  %>% 
+                                                 dplyr::mutate(dividend = cum_stocks_ticker*div) %>% 
+                                                 group_by( Year_div ) %>%
+                                                 dplyr::summarise(Total_Yearly_Div_Reinv = replace_na(sum(dividend),0))
+                                                      ) %>%
+                              dplyr::mutate(cum_Total_Yearly_Div_Reinv = cumsum(Total_Yearly_Div_Reinv)),
+                            x = ~Year_div, y = ~cum_Total_Yearly_Div_Reinv, name="Yearly Dividend - No Re-inv",
+                            mode = "lines+markers", type = "scatter") %>% 
+                  add_trace(data= df_inflation_reinvest %>%
+                              dplyr::mutate(cum_money_input_infl_year = cumsum(money_input_infl_year*12)),
+                            name="Yearly Money input - Re-inv", x = ~Year, y = ~cum_money_input_infl_year, mode = "lines+markers", type = "scatter") %>%   
+                  layout(
+                                  title = "<b>Cash Flow - re-inv<b>",
+                                  xaxis = list(title="Year"),
+                                  yaxis = list(title="($)")
+                        )            
+                 
+                 
+                 
+            
+      
+```
+
+
 ```{r Portfolio DCA - test}
 
 
@@ -2426,10 +3174,41 @@ ending_date="2022-12-31"
 ```
 
 
+```{r Dividend proyection}
+
+
+
+zzz = divs_agg %>% group_by( ticker ) %>% 
+            mutate( growth = ( div/lag(div) -1)*100 )
+  #dplyr::mutate(cum_money_input_infl_year = cumsum(money_input_infl_year*12))
+
+
+zzz = zzz %>% group_by( ticker ) %>% filter(row_number()>1)
+
+zzz %>% 
+  group_by(ticker) %>%  
+  summarise(quantile = scales::percent(c(0.25, 0.5, 0.75)),
+            Growth = quantile(growth, c(0.25, 0.5, 0.75)))
+
+zzz %>% 
+  group_by(ticker) %>%  
+  dplyr::summarise(enframe(quantile(growth, c(0.25, 0.35, 0.5)), "quantile", "Growth"))
+
+
+
+xyz = zzz %>% 
+  group_by(ticker) %>%  
+  dplyr::summarise(enframe(quantile(growth, c(0.25, 0.35, 0.5)), "quantile", "Growth")) %>%
+  filter(quantile == '50%')
+
+
+
+```
 
 ```{r Yield on Buy}
 
 ## Given tickers and buy dates, provide the avg yield per ticker on the moment of buy
+# This will show the effects of the dividend growth
 
 
 

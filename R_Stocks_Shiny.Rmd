@@ -145,11 +145,13 @@ my_index <- c('^GSPC','^DJI','^GDAXI','^N225','^IXIC','^FTSE','^N100','^IBEX')
 
 
 
-initial_date="2007-01-01" #year(initial_date)
+initial_date="2000-01-01" #year(initial_date)
 ending_date = today()     #IMPORTANT: Historical inflation data on the current year might be unavailable
 
+
+
 #ending_date="2023-01-14"
-#ending_date="2022-12-31" 
+ending_date="2021-12-31" 
 
 
 
@@ -288,18 +290,24 @@ ending_date = today()     #IMPORTANT: Historical inflation data on the current y
         
         
 #inflation & money input (priceR)
+        
 Year <- (year(initial_date)-1):(year(ending_date)-1) 
 nominal_prices <- rep(1,length(Year))
 
 df_inflation <- data.frame(Year, nominal_prices)
-df_inflation$in_2020_dollars_factor <- adjust_for_inflation(nominal_prices, Year, "US", to_date = (year(ending_date)-2)) ###PriceR###
+df_inflation$in_202x_dollars_factor <- adjust_for_inflation(nominal_prices, Year, "US", to_date = (year(ending_date)-2)) ###PriceR###
 
 
 df_inflation <- mutate(df_inflation,
-                         yearly_inflation = 100*( lag(in_2020_dollars_factor)/in_2020_dollars_factor -1)
+                         yearly_inflation = 100*( lag(in_202x_dollars_factor)/in_202x_dollars_factor -1)
                             )%>% drop_na()
         
-df_inflation[nrow(df_inflation) + 1,] <- c(2023, 1,0.95,1)        
+df_inflation[nrow(df_inflation) + 1,] <- c(2023, 1,0.95,1)    
+
+
+
+df_inflation <- mutate(df_inflation, inflation_level = ( lag(in_202x_dollars_factor)/in_202x_dollars_factor -1)*100 )
+
         
 
 ##### tabpanel -> Indexes ##### 
@@ -356,7 +364,7 @@ df_inflation[nrow(df_inflation) + 1,] <- c(2023, 1,0.95,1)
 ```
 
 
-```{r dashboard interactive v1.6}
+```{r dashboard interactive v 1.6}
 
 #min_year = 1962
 #max_year = 2022
@@ -531,6 +539,7 @@ if (interactive()) {
                               #DTOutput('DCA_DF_v2'),
                               #DTOutput('DCA_DF_v3'),
                               plotlyOutput('DCA_Portfolio'),
+                              ##add capital gain over years
                                 )
                               )
                       ) #end main panel (currencies)
@@ -967,8 +976,8 @@ if (interactive()) {
                 
                 
                 
-df_inflation$money_input_infl <-input$money_in_portf/length(unique(input$selected_tickers_portf))/df_inflation$in_2020_dollars_factor 
-df_inflation$money_input_infl_year <- input$money_in_portf/df_inflation$in_2020_dollars_factor 
+df_inflation$money_input_infl <-input$money_in_portf/length(unique(input$selected_tickers_portf))/df_inflation$in_202x_dollars_factor 
+df_inflation$money_input_infl_year <- input$money_in_portf/df_inflation$in_202x_dollars_factor 
                 
                 
                 df_historical$Year <- as.integer(format(as.Date(df_historical$ref_date), "%Y"))
@@ -1337,13 +1346,25 @@ df_inflation$money_input_infl_year <- input$money_in_portf/df_inflation$in_2020_
         output$Inflation_Evolution <-renderPlotly({
                         
           
-          plot_ly(df_inflationinteractive()) %>%
-          add_trace(x = ~Year, y = ~in_202x_dollars_factor, type = 'scatter', mode = "lines", yaxis = "y2",name="$ Factor Y2021") %>%
-            add_trace(x = ~Year, y = ~inflation_level, type = 'bar',name='Yearly Inflation US')%>%
-                    layout(title = '<b>US Inflation Data<b>', xaxis = list(title = 'Date'), 
-                           yaxis = list(title = 'Inflation (%Y)'), legend = list(title=list(text='<b> Legend </b>')),
-                           yaxis2 = list(overlaying = "y", side = "right",automargin = T,title = "Factor Y2021",range = c(0,3))
-                          )
+          # plot_ly(df_inflation) %>%
+          # add_trace(x = ~Year, y = ~in_202x_dollars_factor, type = 'scatter', mode = "lines", yaxis = "y2",name="$ Factor Y2021") %>%
+          #   add_trace(x = ~Year, y = ~inflation_level, type = 'bar',name='Yearly Inflation US')%>%
+          #           layout(title = '<b>US Inflation Data<b>', xaxis = list(title = 'Date'), 
+          #                  yaxis = list(title = 'Inflation (%Y)'), legend = list(title=list(text='<b> Legend </b>')),
+          #                  yaxis2 = list(overlaying = "y", side = "right",automargin = T,title = "Factor Y2021",range = c(0,3))
+          #                 )
+          # 
+          
+
+plot_ly(df_inflationinteractive(), type = 'scatter', mode = 'lines') %>%
+      add_trace(x = ~Year, y = ~in_202x_dollars_factor, name="Inflation factor to Y2021") %>%
+                    layout(title = '<b>US Historical Inflation<b>', xaxis = list(title = 'Year'), 
+                           yaxis = list(title = 'a'),
+                           legend = list(title=list(text='<b> Legend </b>')))  %>%
+      add_trace(x = ~Year, y = ~inflation_level, name="Inflation Yearly (%)") %>%
+                    layout(title = '<b>US Historical Inflation<b>', xaxis = list(title = 'Year'), 
+                          yaxis = list(title = '(%)'), 
+                          legend = list(title=list(text='<b> Legend </b>')))
           
           
         })  
