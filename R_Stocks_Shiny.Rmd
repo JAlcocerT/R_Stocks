@@ -22,6 +22,8 @@ editor_options:
 #install.packages("qmao", repos="http://R-Forge.R-project.org", dependencies = TRUE)
 #install.packages("yaml")
 
+#install.packages("thematic")
+
 # install.packages(c("tibble", "dplyr","writexl","shiny","shinythemes","shinyWidgets","scales","readxl","dtplyr","tidyverse","DT","ggthemes","plotly","plyr","leaflet","ggplot2","lubridate","reshape2"), dependencies = TRUE) 
 
 
@@ -89,7 +91,6 @@ library("dplyr")
 library("lubridate")
 library('plotly')
 library("readxl")
-library("ggplot2")
 library("reshape2")
 library("rstudioapi")
 
@@ -98,6 +99,9 @@ library("rstudioapi")
 library(shiny)
 library(shinythemes)
 library(shinyWidgets)
+library(bslib)
+
+
 
 
 
@@ -364,7 +368,74 @@ df_inflation <- mutate(df_inflation, inflation_level = ( lag(in_202x_dollars_fac
 ```
 
 
+```{r testing themes}
+
+
+theme <- bs_theme(
+  # Controls the default grayscale palette
+  bg = "#202123", fg = "#B8BCC2",
+  # Controls the accent (e.g., hyperlink, button, etc) colors
+  primary = "#EA80FC", secondary = "#48DAC6",
+  base_font = c("Grandstander", "sans-serif"),
+  code_font = c("Courier", "monospace"),
+  heading_font = "'Helvetica Neue', Helvetica, sans-serif",
+  # Can also add lower-level customization
+  "input-border-color" = "#EA80FC"
+)
+
+
+if (interactive()) {
+  bs_theme_preview(theme)
+}
+
+# Lower-level bs_add_*() functions allow you to work more
+# directly with the underlying Sass code
+theme <- bs_add_variables(theme, "my-class-color" = "red")
+theme <- bs_add_rules(theme, ".my-class { color: $my-class-color }")
+
+
+
+```
+
+
 ```{r dashboard interactive v 1.6}
+
+# thematic::thematic_shiny(font = "Materia",
+#                          primary="#A19AA6")
+
+
+# bs_theme(
+#   version = version_default(),
+#   bootswatch = NULL,
+#   ...,
+#   bg = NULL,
+#   fg = NULL,
+#   primary = NULL,
+#   secondary = NULL,
+#   success = NULL,
+#   info = NULL,
+#   warning = NULL,
+#   danger = NULL,
+#   base_font = NULL,
+#   code_font = NULL,
+#   heading_font = NULL,
+#   font_scale = NULL
+# )
+
+
+#version = 5,
+# bg = "#FFFFFF"
+#     fg = "#000000",
+#     primary = "#0199F8",
+#     secondary = "#FF374B",
+#     base_font = "Maven Pro"
+
+custom_theme <- bs_theme(
+    
+    bootswatch = 'Materia'
+    
+)
+
 
 #min_year = 1962
 #max_year = 2022
@@ -382,6 +453,10 @@ if (interactive()) {
   shinyApp(
     
     ui = fluidPage(
+      
+        #theme = bs_theme(),  #To try themes on the go
+        theme = custom_theme,
+      
 
 
    titlePanel(h1("R Stocks", align = "center")),
@@ -688,7 +763,11 @@ if (interactive()) {
     
     
     server = function(input, output) {
-                                      
+                  
+      
+      
+        #bs_themer() #To try themes on the go
+                    
       
 ##### tabpanel -> Stock Analysis ##### 
         ### Dataframes ###

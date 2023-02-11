@@ -1144,9 +1144,12 @@ df_historical$yieldv3 <- df_historical$yieldv2*c(rep(2,6601),rep(1,13273-6602))
 
 # test_ticker <- c('NKE','PG','O','ABT','CAT','PEP','KO','LEG','VFC','AMT','MO','BLK','CAT','ABBV','T','VZ','SWK','TROW','MRK','PFE','INTC','MMM','MCD','BMY')
 
-test_ticker <- c('NKE','PG','mc.pa','tyo.4502','t.to')
+#test_ticker <- c('NKE','PG','mc.pa','tyo.4502','t.to')
 
-#test_ticker <- c('BMY')
+test_ticker <- c('TROW')
+
+
+
 
 
 divs <- getDividends(test_ticker[1], 
@@ -1192,6 +1195,12 @@ divs <- rbind(divs, aux)
 # aggregate(divs$div, by=list(Year_div=year(divs$date)), FUN=sum)
 
 
+# #For quarterly growth
+divs_agg <- setNames( aggregate(div ~ (date) + ticker, data = divs, FUN = sum, na.rm = TRUE),
+                    c("Year_div","ticker","div"))
+
+
+#For yearly growth
 divs_agg <- setNames( aggregate(div ~ year(date) + ticker, data = divs, FUN = sum, na.rm = TRUE),
                     c("Year_div","ticker","div"))
 
@@ -1225,7 +1234,7 @@ growth_df <- data.frame( #empty dataframe
 
 
 growth_hist=c()
-n=5 #years of growth comparison
+n=1 #years/quarters of growth comparison
 c=0
 
 unique(divs_agg$ticker)
@@ -1251,15 +1260,53 @@ for(i in 6:nrow(divs_agg_ticker)) {
   
 }
 
-    
-    
-    plot_ly(growth_df, type = 'scatter', mode = 'lines')%>%
+       plot_ly(growth_df, type = 'scatter', mode = 'lines')%>%
       add_trace(x = ~year_growth, y = ~growth_hist, name = ~Ticker) %>%
                     layout(title = "<b>Dividend Growth</b>",
                            xaxis = list(title = 'Growth YoY (%)'), 
-                            yaxis = list(title = 'USD ($)'), legend = list(title=list(text='<b> Tickers </b>')))
+                            yaxis = list(title = 'Growth (%)'), legend = list(title=list(text='<b> Tickers </b>')))
     
     
+#################
+# Using the UDF #
+#################
+    
+source("R_Stocks_Analysis_functions.R")  
+    
+divs_agg <- f_divs_agg( c('TROW'), "2010-01-01",Sys.Date())    
+growth_df <- f_growth_df(divs_agg,1)
+
+   
+growth_df <- f_growth_df(divs_agg,2)
+
+
+    
+divs_agg <- f_divs_agg( c('TROW','PG'), "2010-01-01",Sys.Date())    
+growth_df <- f_growth_df(divs_agg,1)   
+
+growth_df <- f_growth_df(divs_agg,2)   
+
+
+              
+                  plot_ly(
+                    data = divs_agg,
+                    x = ~Year_div,
+                    y = ~div,
+                    type = "bar",
+                    name = ~ticker,
+                    color=~ticker
+                  )  %>%
+                    layout(title = "<b>Dividend Evolution</b>",
+                                       xaxis = list(title = 'Year'), 
+                                        yaxis = list(title = 'USD ($)'), legend = list(title=list(text='<b> Tickers </b>')))
+
+
+            
+               plot_ly(growth_df, type = 'scatter', mode = 'lines')%>%
+                  add_trace(x = ~year_growth, y = ~growth_hist, name = ~Ticker) %>%
+                                layout(title = "<b>Dividend Growth</b>",
+                                       xaxis = list(title = 'Growth YoY (%)'), 
+                                        yaxis = list(title = 'Growth (%)'), legend = list(title=list(text='<b> Tickers </b>')))
     
 
 ```
@@ -3100,7 +3147,14 @@ my_portfolio <- na.omit(my_portfolio)
 my_portfolio$Ticker <- sub("NASDAQ:", "", my_portfolio$Ticker)
 my_portfolio$Ticker <- sub("NYSE:", "", my_portfolio$Ticker)
 
+
 colnames(my_portfolio) <- c('ticker','DCA','Amount')
+
+
+
+my_portfolio$DCA = as.numeric(  gsub(",", "", my_portfolio$DCA) ) /100
+my_portfolio$Invested <- my_portfolio$DCA*my_portfolio$Amount
+
 
 initial_date="2010-01-01" #year(initial_date)
 ending_date="2022-12-31"
@@ -3155,7 +3209,7 @@ ending_date="2022-12-31"
     # 
     # as.numeric(as.character(df_DCA$DCA))  
     
-     df_DCA$DCA = as.numeric(  gsub(",", "", df_DCA$DCA) ) /100
+     #df_DCA$DCA = as.numeric(  gsub(",", "", df_DCA$DCA) ) /100
     
     
       plot_ly(df_DCA ) %>%
@@ -3174,13 +3228,23 @@ ending_date="2022-12-31"
 ```
 
 
-```{r Dividend proyection}
+```{r Dividend Proyection - test}
 
 
+    
+source("R_Stocks_Analysis_functions.R")  
+    
+#divs_agg <- f_divs_agg( c('TROW','PG'), "2010-01-01","2022-12-31")    
+divs_agg <- f_divs_agg(my_portfolio$ticker, "2010-01-01","2022-12-31")    
+
+
+
+### test ###
 
 zzz = divs_agg %>% group_by( ticker ) %>% 
             mutate( growth = ( div/lag(div) -1)*100 )
-  #dplyr::mutate(cum_money_input_infl_year = cumsum(money_input_infl_year*12))
+
+  
 
 
 zzz = zzz %>% group_by( ticker ) %>% filter(row_number()>1)
@@ -3200,6 +3264,80 @@ xyz = zzz %>%
   group_by(ticker) %>%  
   dplyr::summarise(enframe(quantile(growth, c(0.25, 0.35, 0.5)), "quantile", "Growth")) %>%
   filter(quantile == '50%')
+
+
+
+
+
+divs_agg %>% group_by( ticker ) %>% 
+            mutate( growth = ( div/lag(div) -1)*100 ) %>% group_by( ticker ) %>% filter(row_number()>1)  %>% 
+            group_by(ticker) %>%  
+            dplyr::summarise(enframe(quantile(growth, c(0.25, 0.35, 0.5)), "quantile", "Growth")) %>%
+           filter(quantile == '50%')
+
+
+      # divs_agg %>% 
+      #     group_by(ticker) %>% slice(n())
+       
+       # divs_agg %>% 
+       #    group_by(ticker) %>%  slice(1:(n() - 10))  
+
+### end test ###
+
+
+df_growth_portfolio_fcst <- Reduce(function (...) { merge(..., all = FALSE) },   # Inner join
+                        list(divs_agg %>% group_by( ticker ) %>% 
+                                    mutate( growth = ( div/lag(div) -1)*100 ) %>% group_by( ticker ) %>% filter(row_number()>1)  %>% 
+                                    group_by(ticker) %>%  
+                                    dplyr::summarise(enframe(quantile(growth, c(0.25, 0.35, 0.5)), "quantile", "Growth")) %>%
+                                   filter(quantile == '25%'),
+                             my_portfolio,
+                              divs_agg %>% 
+                                 group_by(ticker) %>% slice(n())  
+                           )
+        )
+
+
+df_growth_portfolio_fcst$Current_div <- df_growth_portfolio_fcst$Amount * df_growth_portfolio_fcst$div
+
+
+df_growth_portfolio_fcst$Expected_div <- df_growth_portfolio_fcst$Current_div  * (1 + df_growth_portfolio_fcst$Growth/100)
+       
+       
+sum(df_growth_portfolio_fcst$Expected_div) / sum(df_growth_portfolio_fcst$Current_div)
+
+
+
+#################
+# Using the UDF #
+#################
+    
+source("R_Stocks_Analysis_functions.R")  
+
+df_growth_portfolio_fcst <- f_growth_portfolio_fcst(divs_agg,0.35)
+sum(df_growth_portfolio_fcst$Expected_div) / sum(df_growth_portfolio_fcst$Current_div)
+
+
+
+df_growth_portfolio_fcst <- f_growth_portfolio_fcst(divs_agg,0.5)
+sum(df_growth_portfolio_fcst$Expected_div) / sum(df_growth_portfolio_fcst$Current_div)
+
+
+
+Perc <- c(0.25, 0.35,0.45, 0.5,0.55, 0.65 , 0.75)
+
+
+growth_fcst_consolidated = f_growth_portfolio_fcst(divs_agg,Perc) %>% 
+         group_by(quantile)  %>%  dplyr::summarise(
+                                            Expected_Growth  = 100*(replace_na(sum(Expected_div ),0) / replace_na(sum(Current_div ),0) -1)
+                                            )
+      
+      plot_ly(growth_fcst_consolidated, type = 'bar')%>%
+                          add_trace(x = ~quantile, y = ~Expected_Growth , name = 'Expected Yearly Growth')%>%
+                          layout(title = '<b>Portfolio - Expected Dividend Growth<b>', xaxis = list(title = 'Percentiles'), 
+                       yaxis = list(title = 'Dividend Growth (%)'), legend = list(title=list(text='<b> Legend </b>')))
+
+
 
 
 

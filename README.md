@@ -23,6 +23,8 @@ Add Re-Investment capability
 #### Visualizations
 * <https://github.com/plotly/plotly.R>
 * <https://github.com/rstudio/shiny>
+* <https://bootswatch.com/>
+* <https://github.com/rstudio/bslib>
 
 
 ## IMPORTANT - NO INVESTMENT ADVICE
