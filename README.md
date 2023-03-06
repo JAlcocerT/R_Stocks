@@ -36,13 +36,9 @@ This project uses several open source libraries. I am listing here the ones that
 ### Ways to Contribute
 
 * Please feel free to fork the code - try it out for yourself and improve or add others tabs. The data that is queried give many possibilities to create awsome visualizations.
-* Support extra evening code sessions <a 
- href="https://www.buymeacoffee.com/FossEngineer"
- target="_parent">
-<img 
- src="https://www.dropbox.com/sh/ouq313p1mqfxyb4/AAD7EaxhphCvo1TkMZyDnS6ja/SVG%20Files?dl=0&preview=bmc-button.svg&subfolder_nav_tracking=1"
-alt="Buy Me a Coffee"/>
-</a>
+* Support extra evening code sessions:
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/FossEngineer)
 
 ## IMPORTANT - NO INVESTMENT ADVICE
 
