@@ -3,14 +3,21 @@
 * The analysys Rmd - [R_Stocks_Analysis.Rmd](https://github.com/JAlcocerT/R_Stocks/blob/main/R_Stocks_Analysis.Rmd)
 * The final interactive dashboard - [R_Stocks_Shiny.Rmd](https://github.com/JAlcocerT/R_Stocks/blob/main/R_Stocks_Shiny.Rmd)
     * Stocks Analysis: yfR
-    * Dividend Analysis: yfR, QuantMod, PriceR, QuandDl (optional)
+    * Dividend Analysis: yfR, QuantMod, PriceR, *QuandDl (optional)*
     * Portfolio Analysis: yfR, QuantMod, PriceR
 
-## RoadMap
+## Goals and RoadMap
 
-Add Re-Investment capability
+* Visualize historical trends on the specified stocks/index :heavy_check_mark:
+* Visualize the dividend trends on different stocks, considering the different splits over the time :heavy_check_mark:
+* Portfolio Analysis - Check how the valuation and dividend of a given number of stocks initially :heavy_check_mark:
 
-### Powered thanks to:
+* Add Re-Investment capability - :construction_worker:
+* Improve UI - :construction_worker:
+
+### Powered Thanks To:
+
+This project uses several open source libraries. I am listing here the ones that served as major pilars for making the code come alive:
 #### Data Sources
 * <https://github.com/ropensci/yfR>
 * <https://github.com/stevecondylios/priceR>
@@ -26,6 +33,16 @@ Add Re-Investment capability
 * <https://bootswatch.com/>
 * <https://github.com/rstudio/bslib>
 
+### Ways to Contribute
+
+* Please feel free to fork the code - try it out for yourself and improve or add others tabs. The data that is queried give many possibilities to create awsome visualizations.
+* Support extra evening code sessions <a 
+ href="https://www.buymeacoffee.com/FossEngineer"
+ target="_parent">
+<img 
+ src="https://www.dropbox.com/sh/ouq313p1mqfxyb4/AAD7EaxhphCvo1TkMZyDnS6ja/SVG%20Files?dl=0&preview=bmc-button.svg&subfolder_nav_tracking=1"
+alt="Buy Me a Coffee"/>
+</a>
 
 ## IMPORTANT - NO INVESTMENT ADVICE
 
