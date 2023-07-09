@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  r_stocks_shiny:
+    image: fossengineer/r_stocks
+    container_name: r_stocks
+    ports:
+      - 3838:3838
+    restart: unless-stopped      
