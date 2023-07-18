@@ -36,4 +36,3 @@ shinyUI(fluidPage(
     plotlyOutput("cumulatedMetrics")
   )
 ))
-
