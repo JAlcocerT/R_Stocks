@@ -10,16 +10,17 @@ Further Description at: <https://fossengineer.com/project-shiny-R-Stocks/>
     * Stocks Analysis: yfR
     * Dividend Analysis: yfR, QuantMod, PriceR, *QuandDl (optional)*
     * Portfolio Analysis: yfR, QuantMod, PriceR
-* The R-Stocks App: <https://r_stocks.fossengineer.com/>
+* **The R-Stocks App:** <https://r_stocks.fossengineer.com/>
     * [Docker and the R-Stocks Shiny App](https://fossengineer.com/building-r-shiny-apps-container-image-with-docker/)
     * Versioning of the Docker Images: <https://hub.docker.com/repository/docker/fossengineer/r_stocks>
 
 ## Goals and RoadMap
 
-* Visualize historical trends on the specified stocks/index :heavy_check_mark:
-* Visualize the dividend trends on different stocks, considering the different splits over the time :heavy_check_mark:
-* Portfolio Analysis - Check how the valuation and dividend of a given number of stocks initially :heavy_check_mark:
-* Improve UI :heavy_check_mark:
+* V1:
+    * Visualize historical trends on the specified stocks/index :heavy_check_mark:
+    * Visualize the dividend trends on different stocks, considering the different splits over the time :heavy_check_mark:
+    * Portfolio Analysis - Check how the valuation and dividend of a given number of stocks initially :heavy_check_mark:
+    * Improve UI :heavy_check_mark:
 
 * Add Re-Investment capability - :construction_worker:
 
@@ -42,6 +43,8 @@ This project uses several open source libraries. I am listing here the ones that
 
 #### Visualizations
 
+I need to mention the importance of additional open source tools that made this Shiny App possible.
+
 * <https://github.com/plotly/plotly.R>
 * <https://github.com/rstudio/shiny>
 * <https://bootswatch.com/>
@@ -60,6 +63,8 @@ This project uses several open source libraries. I am listing here the ones that
 
 The Shiny App and its Content is for **informational purposes only** on how to create a Shiny dashboard with publicly available data, you should not construe any such information or other material as legal, tax, investment, financial, or other advice. Nothing contained on this repository is a recommendation to buy or sell any securities or any other financial instruments.
 
+ This program is distributed in the hope that it will motivate you to learn R Shiny and contribute to Open Source, but WITHOUT ANY WARRANTY.
+
 ## :scroll: License
 
     This program is free software; you can redistribute it and/or modify
@@ -69,9 +74,3 @@ The Shiny App and its Content is for **informational purposes only** on how to c
     Freedom to study and modify: You can examine the source code, learn from it, and modify it to suit your needs.
     Freedom to share: You can share the original software or your modified versions with others, so they can benefit from it too.
     Copyleft: When you distribute the software or any derivative works, you must do so under the same GPL-3.0 license. This ensures that the software and its derivatives remain free and open-source.
-
-<<<<<<< HEAD
-    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY.
-=======
-    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY.
->>>>>>> ff93b1dbebe5e4d483f1be571a04d5b8ff8d7ddf
