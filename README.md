@@ -10,6 +10,9 @@ Further Description at: <https://fossengineer.com/project-shiny-R-Stocks/>
     * Stocks Analysis: yfR
     * Dividend Analysis: yfR, QuantMod, PriceR, *QuandDl (optional)*
     * Portfolio Analysis: yfR, QuantMod, PriceR
+* The R-Stocks App: <https://r_stocks.fossengineer.com/>
+    * [Docker and the R-Stocks Shiny App](https://fossengineer.com/building-r-shiny-apps-container-image-with-docker/)
+    * Versioning of the Docker Images: <https://hub.docker.com/repository/docker/fossengineer/r_stocks>
 
 ## Goals and RoadMap
 
@@ -67,4 +70,8 @@ The Shiny App and its Content is for **informational purposes only** on how to c
     Freedom to share: You can share the original software or your modified versions with others, so they can benefit from it too.
     Copyleft: When you distribute the software or any derivative works, you must do so under the same GPL-3.0 license. This ensures that the software and its derivatives remain free and open-source.
 
+<<<<<<< HEAD
     This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY.
+=======
+    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY.
+>>>>>>> ff93b1dbebe5e4d483f1be571a04d5b8ff8d7ddf
