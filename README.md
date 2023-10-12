@@ -1,33 +1,65 @@
 # R_Stocks
 
-Using public financial data together with Shiny in R to create an interactive Shiny App to check how noisy the stock market can be and definitely [not a tool to guide your personal finances](https://github.com/JAlcocerT/R_Stocks#important---no-investment-advice).
+Using public financial data together with in R to create an interactive Shiny App to check how noisy the stock market can be and definitely [not a tool to guide your personal finances](https://github.com/JAlcocerT/R_Stocks#important---no-investment-advice).
 
-Deployed at <https://r_stocks.fossengineer.com>
-Further Description at: <https://fossengineer.com/project-shiny-R-Stocks/>
+* Further Description at: <https://fossengineer.com/project-shiny-R-Stocks/>
+
+## Repisotory Structure
 
 * The analysys Rmd file I used - [R_Stocks_Analysis.Rmd](https://github.com/JAlcocerT/R_Stocks/blob/main/R_Stocks_Analysis.Rmd)
 * The final interactive dashboard - [R_Stocks_Shiny.Rmd](https://github.com/JAlcocerT/R_Stocks/blob/main/R_Stocks_Shiny.Rmd)
     * Stocks Analysis: yfR
     * Dividend Analysis: yfR, QuantMod, PriceR, *QuandDl (optional)*
     * Portfolio Analysis: yfR, QuantMod, PriceR
-* **The R-Stocks App:** <https://r_stocks.fossengineer.com/>
+* **The R-Stocks App:**
     * [Docker and the R-Stocks Shiny App](https://fossengineer.com/building-r-shiny-apps-container-image-with-docker/)
     * Versioning of the Docker Images: <https://hub.docker.com/repository/docker/fossengineer/r_stocks>
 
-## Goals and RoadMap
+## Features and RoadMap
 
-* V1:
-    * Visualize historical trends on the specified stocks/index :heavy_check_mark:
-    * Visualize the dividend trends on different stocks, considering the different splits over the time :heavy_check_mark:
-    * Portfolio Analysis - Check how the valuation and dividend of a given number of stocks initially :heavy_check_mark:
-    * Improve UI :heavy_check_mark:
+* The R Shiny App:
 
-* Add Re-Investment capability - :construction_worker:
+<details>
+  <summary>V1  :heavy_check_mark:</summary>
+  &nbsp;
 
-### Powered Thanks To:
+* Visualize historical trends on the specified stocks/index
+* Visualize the dividend trends on different stocks, considering the different splits over the time 
+* Portfolio Analysis - Check how the valuation and dividend of a given number of stocks initially
+* Improve UI 
 
-This project uses several open source libraries. I am listing here the ones that served as major pilars for making the code come alive:
+</details>
+
+<details>
+  <summary>:construction_worker:</summary>
+  &nbsp;
+
+* Add Re-Investment capability
+* To try the Shinylive package
+
+</details>
+
+* The R FlexhDashboard: <https://jalcocert.github.io/R_Stocks/>
+
+<details>
+  <summary>V1  :heavy_check_mark:</summary>
+  &nbsp;
+
+* Given SP500 historical data, to classify months as per 'boom/burst'
+
+</details>
+
+
+### Powered Thanks To :heart:
+
+This project uses several open source libraries. 
+
+I am listing here the ones that served as major pilars for making the project come alive.
 #### Data Sources
+
+<details>
+  <summary>Click to expand/close the API's used</summary>
+  &nbsp;
 
 * <https://github.com/ropensci/yfR>
     * [Discovering the yfR package](https://fossengineer.com/r-yfR-package-guide/)
@@ -38,12 +70,21 @@ This project uses several open source libraries. I am listing here the ones that
 * <https://github.com/quandl/quandl-r>
     * [Using the quandl R Package](https://fossengineer.com/r-quandl-package-guide/)
 
-* <https://finance.yahoo.com/quote/GC=F/> 
-* <https://www.macrotrends.net/1333/historical-gold-prices-100-year-chart>
+</details>
+
+* Other Data sources:
+    * For the Flexdashboard: <https://github.com/datasets/s-and-p-500>
+    * <https://finance.yahoo.com/quote/GC=F/> 
+    * <https://www.macrotrends.net/1333/historical-gold-prices-100-year-chart>
+
 
 #### Visualizations
 
-I need to mention the importance of additional open source tools that made this Shiny App possible.
+I need to mention the importance of additional **open source tools** that made the visualizations look better.
+
+<details>
+  <summary>Click to expand/close the visualizations tools</summary>
+  &nbsp;
 
 * <https://github.com/plotly/plotly.R>
 * <https://github.com/rstudio/shiny>
@@ -51,7 +92,10 @@ I need to mention the importance of additional open source tools that made this 
 * <https://github.com/rstudio/bslib>
 * <https://r-graph-gallery.com/38-rcolorbrewers-palettes.html>
 
-### Ways to Contribute
+</details>
+
+
+### :loudspeaker: Ways to Contribute
 
 * Please feel free to fork the code - try it out for yourself and improve or add others tabs. The data that is queried give many possibilities to create awsome visualizations.
 
@@ -61,9 +105,9 @@ I need to mention the importance of additional open source tools that made this 
 
 ## IMPORTANT! - NO INVESTMENT ADVICE
 
-The Shiny App and its Content is for **informational purposes only** on how to create a Shiny dashboard with publicly available data, you should not construe any such information or other material as legal, tax, investment, financial, or other advice. Nothing contained on this repository is a recommendation to buy or sell any securities or any other financial instruments.
+The repository and its content is for **informational purposes only** on how to create a Shiny dashboard / Flexdashboard in R with publicly available data, you should not construe any such information or other material as legal, tax, investment, financial, or other advice. Nothing contained on this repository is a recommendation to buy or sell any securities or any other financial instruments.
 
- This program is distributed in the hope that it will motivate you to learn R Shiny and contribute to Open Source, but WITHOUT ANY WARRANTY.
+This program is distributed in the hope that it will motivate you to learn R Shiny and contribute to Open Source, but WITHOUT ANY WARRANTY.
 
 ## :scroll: License
 
