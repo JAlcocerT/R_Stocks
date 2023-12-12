@@ -17,7 +17,7 @@ Using public financial data together with in R to create an interactive Shiny Ap
 
 ## 🎯 Features and RoadMap
 
-* The **R Shiny App**:
+* The R Shiny App:
 
 <details>
   <summary>V1  :heavy_check_mark:</summary>
@@ -41,7 +41,7 @@ Using public financial data together with in R to create an interactive Shiny Ap
 
 </details>
 
-* The **R FlexhDashboard**: <https://jalcocert.github.io/R_Stocks/>
+* The R FlexhDashboard: <https://jalcocert.github.io/R_Stocks/>
 
 <details>
   <summary>V1  :heavy_check_mark:</summary>
@@ -103,7 +103,7 @@ I need to mention the importance of additional **open source tools** that made t
 
 * Support extra evening code sessions:
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Z8Z1QPGUM)
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/FossEngineer)
 
 ## IMPORTANT! - NO INVESTMENT ADVICE
 
