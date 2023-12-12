@@ -22,11 +22,12 @@ output:
 # Load the rmarkdown package
 library(rmarkdown)
 
-# Use render() to knit the Rmd file
-#render("R_Flexdashboard_Cycles", 
-         #  output_format = "all", 
-         # output_dir = "path./docs")
-#render("your_file.Rmd", params = list(param1 = "value1", param2 = "value2"))
+#setwd("/home/jalcocert/R_Stocks")
+## Use render() to knit the Rmd file
+# render("R_Flexdashboard_Cycles.Rmd",
+#  output_format = "all",
+# output_dir = "/docs")
+# render("your_file.Rmd", params = list(param1 = "value1", param2 = "value2"))
 
 
 ##############
@@ -35,9 +36,9 @@ library(rmarkdown)
 
 
 # 
-# library(flexdashboard)
-# library(plotly)
-# library(readr)
+library(flexdashboard)
+##library(plotly)
+library(readr)
 
 # Set a custom library path
 # .libPaths("./EDA")

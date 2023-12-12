@@ -25,7 +25,7 @@ library("viridis")
 
 
 
-test_ticker <- c('KO','PG','JNJ','TROW','PEP','MCD','PFE')
+test_ticker <- c('KO','PG','JNJ','TROW','PEP','MCD','PFE','SPY','XOM')
 my_index <- c('^GSPC','^DJI','^DAX','^VIX')
 
 

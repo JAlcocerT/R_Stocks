@@ -15,7 +15,7 @@ Using public financial data together with in R to create an interactive Shiny Ap
     * [Docker and the R-Stocks Shiny App](https://fossengineer.com/building-r-shiny-apps-container-image-with-docker/)
     * Versioning of the Docker Images: <https://hub.docker.com/repository/docker/fossengineer/r_stocks>
 
-## Features and RoadMap
+## 🎯 Features and RoadMap
 
 * The R Shiny App:
 
@@ -27,6 +27,8 @@ Using public financial data together with in R to create an interactive Shiny Ap
 * Visualize the dividend trends on different stocks, considering the different splits over the time 
 * Portfolio Analysis - Check how the valuation and dividend of a given number of stocks initially
 * Improve UI 
+
+* V1.1: Selecting the stocks as environment variable in docker-compose.yml
 
 </details>
 
@@ -50,7 +52,7 @@ Using public financial data together with in R to create an interactive Shiny Ap
 </details>
 
 
-### Powered Thanks To :heart:
+### Powered Thanks To ❤️
 
 This project uses several open source libraries. 
 

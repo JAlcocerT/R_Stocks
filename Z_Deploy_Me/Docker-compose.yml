@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  stock-app:
+    image: r_stocks
+    container_name: RStock_container
+    ports:
+      - "3838:3838"
+    volumes:
+      - stock-data:/app
+
+volumes:
+  stock-data:
+    name: stock_data_volume
