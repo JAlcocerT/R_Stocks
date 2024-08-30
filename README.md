@@ -1,4 +1,23 @@
-# R_Stocks
+<div align="center">
+  <h1>R_Stocks</h1>
+</div>
+
+
+
+<div align="center">
+  <a href="https://github.com/JAlcocerT/R_Stocks?tab=GPL-3.0-1-ov-file" style="margin-right: 5px;">
+    <img alt="Code License" src="https://img.shields.io/badge/License-GPLv3-blue.svg" />
+  </a>
+  <a href="https://github.com/JAlcocerT/R_Stocks/actions/workflows/build_shiny.yml" style="margin-right: 5px;">
+    <img alt="GH Actions Workflow" src="https://github.com/JAlcocerT/R_Stocks/actions/workflows/build_shiny.yml/badge.svg" />
+  </a>
+  <a href="https://GitHub.com/JAlcocerT/R_Stocks/graphs/commit-activity" style="margin-right: 5px;">
+    <img alt="Mantained" src="https://img.shields.io/badge/Maintained%3F-no-grey.svg" />
+  </a>
+  <a href="https://cran.r-project.org/web/packages/shiny/index.html">
+    <img alt="Python Version" src="https://img.shields.io/badge/r-4.1.2-blue.svg" />
+  </a>
+</div>
 
 Using public financial data together with in R to create an interactive Shiny App to check how noisy the stock market can be and definitely [not a tool to guide your personal finances](https://github.com/JAlcocerT/R_Stocks#important---no-investment-advice).
 
@@ -47,7 +66,7 @@ Using public financial data together with in R to create an interactive Shiny Ap
   <summary>V1  :heavy_check_mark:</summary>
   &nbsp;
 
-* Given SP500 historical data, to classify months as per 'boom/burst'
+* Given SP500 historical data, to **classify months as per 'boom/burst'**
 
 </details>
 
