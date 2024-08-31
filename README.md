@@ -2,7 +2,9 @@
   <h1>R_Stocks</h1>
 </div>
 
-
+<div align="center">
+  <h3>R Shiny Dashboard Sample to Display Financial Info</h3>
+</div>
 
 <div align="center">
   <a href="https://github.com/JAlcocerT/R_Stocks?tab=GPL-3.0-1-ov-file" style="margin-right: 5px;">
@@ -39,7 +41,7 @@ Using public financial data together with in R to create an interactive Shiny Ap
 * The R Shiny App:
 
 <details>
-  <summary>V1  :heavy_check_mark:</summary>
+  <summary>V1 Features :heavy_check_mark:</summary>
   &nbsp;
 
 * Visualize historical trends on the specified stocks/index
@@ -63,7 +65,7 @@ I am listing here the ones that served as major pilars for making the project co
 #### Data Sources
 
 <details>
-  <summary>Click to expand/close the API's used</summary>
+  <summary>See the API's used</summary>
   &nbsp;
 
 * <https://github.com/ropensci/yfR>
@@ -85,7 +87,7 @@ I am listing here the ones that served as major pilars for making the project co
 I need to mention the importance of additional **open source tools** that made the visualizations look better.
 
 <details>
-  <summary>Click to expand/close the visualizations tools</summary>
+  <summary>See the visualizations tools</summary>
   &nbsp;
 
 * <https://github.com/plotly/plotly.R>
