@@ -39,4 +39,3 @@ sudo docker push yourdockerhub/rstocks
 
 * And then: `docker run -p 3838:3838 r_stocks`
 * Go to your browser: `localhost:3838`
-

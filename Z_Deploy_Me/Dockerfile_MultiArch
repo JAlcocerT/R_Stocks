@@ -1,0 +1,36 @@
+###############
+#### ARM86 ####
+###############
+
+##DOCKER_BUILDKIT=1 docker build --no-cache --progress=plain -t rstocks_rbase_arm .
+## > build.log 2>&1
+
+FROM r-base:latest
+RUN apt-get update && apt-get install -y --no-install-recommends \
+   sudo \
+   libcurl4-gnutls-dev \
+   libcairo2-dev \
+   libxt-dev \
+   libssl-dev \
+   libssh2-1-dev \
+   libxml2-dev \
+   && rm -rf /var/lib/apt/lists/*
+
+# Install remotes package
+RUN R -e 'install.packages("remotes")'
+
+RUN R -e 'install.packages(c("shiny", "plotly", "viridis", "dplyr", "tidyr","lubridate","shinythemes","shinyWidgets","DT","bslib","priceR","quantmod"))'
+RUN R -e 'install.packages("yfR", dependencies = TRUE)'
+
+# Install specific versions of Shiny and Plotly, along with their dependencies
+# RUN R -e 'remotes::install_version("shiny", version = "1.6.0", dependencies = TRUE)'
+# RUN R -e 'remotes::install_version("plotly", version = "4.9.3", dependencies = TRUE)'
+
+# Copy app.R to the container
+COPY app.R /srv/shiny-server/app.R
+
+# Expose the required port
+EXPOSE 3838
+
+# Set the CMD to run the Shiny app
+CMD ["R", "-e", "shiny::runApp('/srv/shiny-server/app.R', host = '0.0.0.0', port = 3838)"]

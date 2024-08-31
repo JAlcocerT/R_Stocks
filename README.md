@@ -23,7 +23,7 @@ Using public financial data together with in R to create an interactive Shiny Ap
 
 * Further Description at: <https://jalcocert.github.io/JAlcocerT/R-Stocks/>
 
-## Repisotory Structure
+## Repository Structure
 
 * The analysys Rmd file I used - [R_Stocks_Analysis.Rmd](https://github.com/JAlcocerT/R_Stocks/blob/main/R_Stocks_Analysis.Rmd)
 * The final interactive dashboard - [R_Stocks_Shiny.Rmd](https://github.com/JAlcocerT/R_Stocks/blob/main/R_Stocks_Shiny.Rmd)
@@ -47,28 +47,12 @@ Using public financial data together with in R to create an interactive Shiny Ap
 * Portfolio Analysis - Check how the valuation and dividend of a given number of stocks initially
 * Improve UI 
 
-* V1.1: Selecting the stocks as environment variable in docker-compose.yml
-
-</details>
-
-<details>
-  <summary>:construction_worker:</summary>
-  &nbsp;
-
-* Add Re-Investment capability
-* To try the Shinylive package
+* V1.1: Selecting the stocks as environment variable in `docker-compose.yml`
 
 </details>
 
 * The R FlexhDashboard: <https://jalcocert.github.io/R_Stocks/>
-
-<details>
-  <summary>V1  :heavy_check_mark:</summary>
-  &nbsp;
-
-* Given SP500 historical data, to **classify months as per 'boom/burst'**
-
-</details>
+  * Given SP500 historical data, to **classify months as per 'boom/burst'**
 
 
 ### Powered Thanks To ❤️
@@ -113,17 +97,23 @@ I need to mention the importance of additional **open source tools** that made t
 </details>
 
 
-### :loudspeaker: Ways to Contribute
+### Ways to Contribute 📢
 
 * Please feel free to fork the code - try it out for yourself and improve or add others tabs. The data that is queried give many possibilities to create awsome visualizations.
 
 * Support extra evening code sessions:
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Z8Z1QPGUM)
+<div align="center">
+  <a href="https://ko-fi.com/Z8Z1QPGUM">
+    <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="ko-fi">
+  </a>
+</div>
 
 ## IMPORTANT! - NO INVESTMENT ADVICE
 
-The repository and its content is for **informational purposes only** on how to create a Shiny dashboard / Flexdashboard in R with publicly available data, you should not construe any such information or other material as legal, tax, investment, financial, or other advice. Nothing contained on this repository is a recommendation to buy or sell any securities or any other financial instruments.
+The repository and its content is for **informational purposes only** on how to create a Shiny dashboard / Flexdashboard in R with publicly available data, you should not construe any such information or other material as legal, tax, investment, financial, or other advice.
+
+**Nothing contained on this repository is a recommendation to buy or sell any securities or any other financial instruments.**
 
 This program is distributed in the hope that it will motivate you to learn R Shiny and contribute to Open Source, but WITHOUT ANY WARRANTY.
 

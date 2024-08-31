@@ -1,9 +1,8 @@
 version: '3.8'
-
 services:
-  stock-app:
+  stocks-rshiny:
     image: ghcr.io/jalcocert/r-stocks:latest #r_stocks
-    container_name: RStock_Container
+    container_name: RStocks_Container
     ports:
       - "3838:3838"
     volumes:
