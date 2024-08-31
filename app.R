@@ -259,9 +259,9 @@ ui <- fluidPage(
                                         min = min_year, max = max_year-1, value = c(min_year, 2020)),
                             sliderInput("year_yoc",
                                         "YoC looking from the year (TODAY*)",
-                                        min = min_year, max = max_year-1, value = 2021,width = "90%"),
+                                        min = min_year, max = max_year-1, value = 2023,width = "90%"),
                             sliderInput("money_in_portf",
-                                        "Monetary input - Monthly (value of 2021)",
+                                        "Monetary input - Monthly (value of 2023)",
                                         min = 100, max = 5000, value = 1000,width = "90%"),
                             selectInput(
                               'selected_tickers_portf',

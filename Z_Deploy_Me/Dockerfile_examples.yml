@@ -2,7 +2,6 @@
 #### X86 ####
 
 FROM rocker/tidyverse:4 
-LABEL maintainer "JAlcocerT <jalcocert@fossengineer.com>"
 RUN R -e 'install.packages(c("shiny", "plotly", "viridis","dplyr", "tidyr","lubridate","shinythemes","shinyWidgets","DT","bslib","priceR","quantmod"))'
 
 RUN R -e 'install.packages("yfR", dependencies = TRUE)'
@@ -25,7 +24,6 @@ CMD R -e 'shiny::runApp("app.R", port = 3838, host = "0.0.0.0")'
 ## > build.log 2>&1
 
 FROM r-base:latest
-LABEL maintainer "JAlcocerT <jalcocert@fossengineer.com>"
 RUN apt-get update && apt-get install -y --no-install-recommends \
    sudo \
    libcurl4-gnutls-dev \

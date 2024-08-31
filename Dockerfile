@@ -1,5 +1,4 @@
 # FROM rocker/shiny:3.6.1
-# LABEL maintainer "JAlcocerT <jalcocert@fossengineer.com>"
 # WORKDIR /srv/shiny-serverRUN apt-get update \
 #     && apt-get install -y libsasl2-dev libssl-devRUN echo \
 #   'options(repos=list(CRAN="https://cloud.r-project.org/"))' > \
@@ -28,7 +27,6 @@
 # #################### Building from shiny docker image ###################3
 
 # FROM rocker/shiny
-# LABEL maintainer "JAlcocerT <jalcocert@fossengineer.com>"
 
 # WORKDIR /srv/shiny-server
 
@@ -94,6 +92,8 @@
 # ###########################OK##################################
 
 FROM rocker/tidyverse:4 
+LABEL maintainer "JAlcocerT"
+LABEL org.opencontainers.image.source https://github.com/JAlcocerT/R_Stocks
 
 RUN R -e 'install.packages(c("shiny", "plotly", "viridis","dplyr", "tidyr","lubridate","shinythemes","shinyWidgets","DT","bslib","priceR","quantmod"))'
 
@@ -109,16 +109,7 @@ CMD R -e 'shiny::runApp("app.R", port = 3838, host = "0.0.0.0")'
 
 # ####################################################################
 
-# #sudo docker build -t cerdo/shiny2 .
-# #sudo docker run -p3838:3838 -detached cerdo/shiny2
 
-
-
-# #sudo DOCKER_BUILDKIT=1 docker build --no-cache --progress=plain -t fossengineer/rstocks .
-# #sudo docker run -p 3838:3838 --name rstonkss -detached fossengineer/rstocks
-
-# #sudo docker login
-# #sudo docker push fossengineer/rstocks
 
 # ########################casi casi############################
 

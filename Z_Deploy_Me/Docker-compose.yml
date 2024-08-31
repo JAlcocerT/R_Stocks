@@ -2,12 +2,19 @@ version: '3.8'
 
 services:
   stock-app:
-    image: r_stocks
-    container_name: RStock_container
+    image: ghcr.io/jalcocert/r-stocks:latest #r_stocks
+    container_name: RStock_Container
     ports:
       - "3838:3838"
     volumes:
       - stock-data:/app
+    # networks:                   #optional
+    #   - cloudflare_tunnel       #optional
+    restart: unless-stopped
+
+# networks:             #optional
+#   cloudflare_tunnel:  #optional
+#     external: true    #optional
 
 volumes:
   stock-data:

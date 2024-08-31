@@ -21,7 +21,7 @@
 
 Using public financial data together with in R to create an interactive Shiny App to check how noisy the stock market can be and definitely [not a tool to guide your personal finances](https://github.com/JAlcocerT/R_Stocks#important---no-investment-advice).
 
-* Further Description at: <https://fossengineer.com/project-shiny-R-Stocks/>
+* Further Description at: <https://jalcocert.github.io/JAlcocerT/R-Stocks/>
 
 ## Repisotory Structure
 
@@ -31,8 +31,8 @@ Using public financial data together with in R to create an interactive Shiny Ap
     * Dividend Analysis: yfR, QuantMod, PriceR, *QuandDl (optional)*
     * Portfolio Analysis: yfR, QuantMod, PriceR
 * **The R-Stocks App:**
-    * [Docker and the R-Stocks Shiny App](https://fossengineer.com/building-r-shiny-apps-container-image-with-docker/)
-    * Versioning of the Docker Images: <https://hub.docker.com/repository/docker/fossengineer/r_stocks>
+    * [Docker and the R-Stocks Shiny App](https://jalcocert.github.io/JAlcocerT/building-r-shiny-apps-container-image-with-docker/)
+    * Versioning of the [Docker Container Images at GHCR](https://github.com/users/JAlcocerT/packages/container/package/r-stocks)
 
 ## 🎯 Features and RoadMap
 
@@ -83,13 +83,9 @@ I am listing here the ones that served as major pilars for making the project co
   &nbsp;
 
 * <https://github.com/ropensci/yfR>
-    * [Discovering the yfR package](https://fossengineer.com/r-yfR-package-guide/)
 * <https://github.com/stevecondylios/priceR>
-    * [Querying currency pairs with PriceR](https://fossengineer.com/r-priceR-package-guide/)
 * <https://github.com/joshuaulrich/quantmod>
-    * [My guide for QuantMod Package](https://fossengineer.com/r-Quantmod-package-guide/)
 * <https://github.com/quandl/quandl-r>
-    * [Using the quandl R Package](https://fossengineer.com/r-quandl-package-guide/)
 
 </details>
 
@@ -97,6 +93,7 @@ I am listing here the ones that served as major pilars for making the project co
     * For the Flexdashboard: <https://github.com/datasets/s-and-p-500>
     * <https://finance.yahoo.com/quote/GC=F/> 
     * <https://www.macrotrends.net/1333/historical-gold-prices-100-year-chart>
+    * FED <https://fred.stlouisfed.org/series/FEDFUNDS>
 
 
 #### Visualizations
@@ -122,7 +119,7 @@ I need to mention the importance of additional **open source tools** that made t
 
 * Support extra evening code sessions:
 
-[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/FossEngineer)
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Z8Z1QPGUM)
 
 ## IMPORTANT! - NO INVESTMENT ADVICE
 

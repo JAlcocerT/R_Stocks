@@ -155,7 +155,7 @@ ending_date = today()     #IMPORTANT: Historical inflation data on the current y
 
 
 #ending_date="2023-01-14"
-ending_date="2021-12-31" 
+ending_date="2023-12-31" 
 
 
 
@@ -373,7 +373,7 @@ df_inflation <- mutate(df_inflation, inflation_level = ( lag(in_202x_dollars_fac
 
 theme <- bs_theme(
   # Controls the default grayscale palette
-  bg = "#202123", fg = "#B8BCC2",
+  bg = "#202323", fg = "#B8BCC2",
   # Controls the accent (e.g., hyperlink, button, etc) colors
   primary = "#EA80FC", secondary = "#48DAC6",
   base_font = c("Grandstander", "sans-serif"),
@@ -574,9 +574,9 @@ if (interactive()) {
                                         min = min_year, max = max_year-1, value = c(2010, 2020)),
                             sliderInput("year_yoc",
                                 "YoC looking from the year (TODAY*)",
-                                min = min_year, max = max_year-1, value = 2021,width = "90%"),
+                                min = min_year, max = max_year-1, value = 2023,width = "90%"),
                             sliderInput("money_in_portf",
-                                "Monetary input - Monthly (value of 2021)",
+                                "Monetary input - Monthly (value of 2023)",
                                 min = 100, max = 5000, value = 1000,width = "90%"),
                             selectInput(
                                         'selected_tickers_portf',
@@ -732,7 +732,7 @@ if (interactive()) {
                          
                             sliderInput("years_inflation",
                                         label = h3("Years"),
-                                        min = min_year, max = max_year-1, value = c(2000, 2021)),
+                                        min = min_year, max = max_year-1, value = c(2000, 2023)),
                             selectInput(
                                         'selected_countries',
                                         'Select Countries',
@@ -1426,17 +1426,17 @@ df_inflation$money_input_infl_year <- input$money_in_portf/df_inflation$in_202x_
                         
           
           # plot_ly(df_inflation) %>%
-          # add_trace(x = ~Year, y = ~in_202x_dollars_factor, type = 'scatter', mode = "lines", yaxis = "y2",name="$ Factor Y2021") %>%
+          # add_trace(x = ~Year, y = ~in_202x_dollars_factor, type = 'scatter', mode = "lines", yaxis = "y2",name="$ Factor Y2023") %>%
           #   add_trace(x = ~Year, y = ~inflation_level, type = 'bar',name='Yearly Inflation US')%>%
           #           layout(title = '<b>US Inflation Data<b>', xaxis = list(title = 'Date'), 
           #                  yaxis = list(title = 'Inflation (%Y)'), legend = list(title=list(text='<b> Legend </b>')),
-          #                  yaxis2 = list(overlaying = "y", side = "right",automargin = T,title = "Factor Y2021",range = c(0,3))
+          #                  yaxis2 = list(overlaying = "y", side = "right",automargin = T,title = "Factor Y2023",range = c(0,3))
           #                 )
           # 
           
 
 plot_ly(df_inflationinteractive(), type = 'scatter', mode = 'lines') %>%
-      add_trace(x = ~Year, y = ~in_202x_dollars_factor, name="Inflation factor to Y2021") %>%
+      add_trace(x = ~Year, y = ~in_202x_dollars_factor, name="Inflation factor to Y2023") %>%
                     layout(title = '<b>US Historical Inflation<b>', xaxis = list(title = 'Year'), 
                            yaxis = list(title = 'a'),
                            legend = list(title=list(text='<b> Legend </b>')))  %>%
