@@ -1,6 +1,14 @@
 # Deploy Me!
 
-## Quick - Use The GHCR Image
+[![hub Docker Image Size](https://img.shields.io/docker/image-size/fossengineer/r_stocks/v1?logo=docker&label=hub%20image%20size)](https://hub.docker.com/r/fossengineer/r_stocks)
+
+Wrote about having [R Shiny Apps with containers →](https://jalcocert.github.io/JAlcocerT/building-r-shiny-apps-container-image-with-docker/)
+
+## RStocks BareMetal
+
+## RStocks with Containers
+
+### Quick - Use The GHCR Image
 
 * Visit and check the version you want to deploy:
     * <https://github.com/users/JAlcocerT/packages/container/package/r-stocks>
@@ -9,7 +17,7 @@
 * Go to your browser: `localhost:3838`
 
 
-## [Build](https://fossengineer.com/building-docker-container-images/) Me ❤️
+### [Build](https://jalcocert.github.io/JAlcocerT/why-i-love-containers/#container-tech-is-cool) Me ❤️
 
 * Get Docker installed
 * Clone this repository
@@ -21,7 +29,6 @@ podman build -t r_stocks .
 
 sudo docker run -p3838:3838 -detached podman build -t r_stocks .
 ```
-
 
 <details>
   <summary>Click to expand/close the visualizations tools</summary>
@@ -38,4 +45,4 @@ sudo docker push yourdockerhub/rstocks
 
 
 * And then: `docker run -p 3838:3838 r_stocks`
-* Go to your browser: `localhost:3838`
+* Go to your browser to see the RStocks web app UI: `localhost:3838`

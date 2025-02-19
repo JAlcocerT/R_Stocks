@@ -6,181 +6,25 @@ output:
   flexdashboard::flex_dashboard:
     orientation: columns
     vertical_layout: fill
+    tabset: true
 ---
 
-
-
-
 ```{r setup, include=FALSE}
-
-#################
-### Render ME ###
-#################
-# 
-# rmarkdown::render()
-
-# Load the rmarkdown package
-library(rmarkdown)
-
-#setwd("/home/jalcocert/R_Stocks")
-## Use render() to knit the Rmd file
-# render("R_Flexdashboard_Cycles.Rmd",
-#  output_format = "all",
-# output_dir = "/docs")
-# render("your_file.Rmd", params = list(param1 = "value1", param2 = "value2"))
-
-
-##############
-### SETUP ####
-##############
-
-
-# 
+# Load necessary libraries
 library(flexdashboard)
-##library(plotly)
-library(readr)
-
-# Set a custom library path
-# .libPaths("./EDA")
-# 
-
- #install.packages("Rtools")
-# #install.packages("htmltools")
-# #install.packages("htmltools", repos = "https://cran.r-project.org")
-
-#packageVersion("htmltools")
-
-#detach("package:htmltools", unload = TRUE)
-
-
-# 
-# install.packages("plotly", repos = "https://cran.r-project.org")
-# 
-# 
-# 
-# # Unload the packages
-# detach("package:htmltools", unload = TRUE)
-# detach("package:plotly", unload = TRUE)
-# 
-# # Load the packages again
-# library(htmltools)
-# library(plotly)
-
-
-```
-
-### S&P 500 Boom and Bust Cycles
-
-```{r}
-# R code to create a line graph of the S&P 500 index over time
-
-# Load libraries
 library(ggplot2)
-library(readr)
-
-# Load the data
-sp500_data <- read_csv("./data_sp500.csv")
-
-# Convert Date to a date type
-sp500_data$Date <- as.Date(sp500_data$Date, format = "%Y-%m-%d")
-
-# Create a line graph
-p <- ggplot(sp500_data, aes(x = Date, y = SP500)) +
-  geom_line() +
-  labs(title = "Trend of S&P 500 Over Time",
-       x = "Date",
-       y = "S&P 500") +
-  theme_minimal()
-
-# Display the plot
-print(p)
-
-
-```
-
-
-```{r}
-
-# Load required libraries
+library(plotly)
 library(dplyr)
 library(readr)
 
-# Load the data
-sp500_data <- read_csv("./data_sp500.csv") %>%
+# Load the data and create the Boom/Bust classification
+sp500_data <- read_csv("./Z_Sample_Data/data_sp500.csv") %>%
   select(Date, SP500)
 
 # Ensure Date is in Date format
 sp500_data$Date <- as.Date(sp500_data$Date, format = "%Y-%m-%d")
 
-# Create a logic for Boom/Bust classification
-sp500_data <- sp500_data %>%
-  arrange(Date) %>%
-  mutate(Change = SP500 - lag(SP500),
-         Direction = ifelse(Change > 0, "Increase", "Decrease"),
-         Bust = ifelse(Direction == "Decrease" & 
-                        lag(Direction) == "Decrease" & 
-                        lag(Direction, 2) == "Decrease", 1, 0),
-         Status = ifelse(Bust == 1, "Bust", "Boom/Neutral")) %>%
-  select(-Change, -Direction, -Bust)  # Optionally remove helper columns
-
-# View the data
-head(sp500_data)
-
-```
-```{r}
-
-# Load required libraries
-library(dplyr)
-library(readr)
-library(tidyr)  # For replace_na()
-
-# Load the data
-sp500_data <- read_csv("./data_sp500.csv") %>%
-  select(Date, SP500)
-
-# Ensure Date is in Date format
-sp500_data$Date <- as.Date(sp500_data$Date, format = "%Y-%m-%d")
-
-# Create a logic for Boom/Bust classification
-sp500_data <- sp500_data %>%
-  arrange(Date) %>%
-  mutate(Change = SP500 - lag(SP500),
-         Direction = ifelse(Change > 0, "Increase", "Decrease"),
-         Bust = ifelse(Direction == "Decrease" & 
-                        lag(Direction) == "Decrease" & 
-                        lag(Direction, 2) == "Decrease", 1, 0),
-         Status = ifelse(Bust == 1, "Bust", "Boom")) %>%
-  select(-Change, -Direction, -Bust)  # Optionally remove helper columns
-
-# Identify cycles with unique labeling
-sp500_data <- sp500_data %>%
-  mutate(New_Cycle = Status != lag(Status, default = first(Status)),
-         Cycle_ID = replace_na(cumsum(New_Cycle), 0),  # Replace NA with 0
-         Cycle_Label = paste(Status, Cycle_ID, sep = "_")) %>%
-  select(-New_Cycle, -Cycle_ID)  # Optionally remove helper columns
-  
-# View the data
-head(sp500_data)
-
-
-```
-
-
-
-```{r}
-
-# Load required libraries
-library(dplyr)
-library(readr)
-
-# Load the data
-sp500_data <- read_csv("./data_sp500.csv") %>%
-  select(Date, SP500)
-
-# Ensure Date is in Date format
-sp500_data$Date <- as.Date(sp500_data$Date, format = "%Y-%m-%d")
-
-# Create a logic for Boom/Bust classification
+# Create Boom/Bust classification
 sp500_data <- sp500_data %>%
   arrange(Date) %>%
   mutate(Change = SP500 - lag(SP500, default = first(SP500)),
@@ -188,15 +32,15 @@ sp500_data <- sp500_data %>%
          Bust = ifelse(Direction == "Decrease" & 
                         lag(Direction, default = "Increase") == "Decrease" & 
                         lag(Direction, 2, default = "Increase") == "Decrease", 1, 0),
-         Status = ifelse(Bust == 1, "Bust", "Boom")) %>%
-  select(-Change, -Direction, -Bust)  # Optionally remove helper columns
+         Status = ifelse(Bust == 1, "Burst", "Boom")) %>%
+  select(-Change, -Direction, -Bust)  
 
 # Identify cycles with unique labeling
 sp500_data <- sp500_data %>%
   mutate(New_Cycle = Status != lag(Status, default = first(Status)),
          Cycle_ID = cumsum(New_Cycle),
          Cycle_Label = ifelse(is.na(Cycle_ID), NA, paste(Status, Cycle_ID, sep = "_"))) %>%
-  select(-New_Cycle, -Cycle_ID)  # Optionally remove helper columns
+  select(-New_Cycle, -Cycle_ID)
 
 # Summarize data for each cycle
 cycle_summary <- sp500_data %>%
@@ -208,39 +52,39 @@ cycle_summary <- sp500_data %>%
             End_SP500 = last(SP500),
             Change_Percent = (End_SP500 - Start_SP500) / Start_SP500 * 100) %>%
   ungroup()
-
-# View the summarized data
-head(cycle_summary)
-
-
-
 ```
 
+## T1
 
 ```{r}
+# Plot the trend with Boom/Bust cycles (ggplot)
+p_ggplot <- ggplot() +
+  geom_rect(data = cycle_summary,
+            aes(xmin = Start_Date, xmax = End_Date,
+                ymin = -Inf, ymax = Inf, fill = Status),
+            alpha = 0.2) + # Adjust alpha for transparency
+  geom_line(data = sp500_data, aes(x = Date, y = SP500)) +
+  labs(title = "S&P 500 Trend with Boom/Bust Cycles",
+       x = "Date",
+       y = "S&P 500") +
+  theme_minimal() +
+  scale_fill_manual(values = c("Boom" = "lightblue", "Burst" = "lightcoral")) # Customize colors
 
-# Load required library
-library(ggplot2)
+# Display the plot
+p_ggplot
+```
 
-# Histogram of Duration_Months grouped by Status
-p1 <- ggplot(cycle_summary, aes(x = Duration_Months, fill = Status)) +
-  geom_histogram(binwidth = 5, position = "dodge") +
-  labs(title = "Histogram of Duration in Months per Status",
-       x = "Duration (Months)",
-       y = "Frequency") +
-  theme_minimal()
+## T2
+```{r}
+# Plotly scatter plot for Cycle Duration vs. Change Percentage
+p_scatter <- plot_ly(data = cycle_summary, x = ~Duration_Months, y = ~Change_Percent,
+                     type = "scatter", mode = "markers", color = ~Status,
+                     text = ~Cycle_Label) %>%
+  layout(title = "Cycle Duration vs. Change Percentage",
+         xaxis = list(title = "Duration (Months)"),
+         yaxis = list(title = "Change Percentage (%)"))
 
-# Histogram of Change_Percent grouped by Status
-p2 <- ggplot(cycle_summary, aes(x = Change_Percent, fill = Status)) +
-  geom_histogram(binwidth = 5, position = "dodge") +
-  labs(title = "Histogram of SP500 Change Percentage per Status",
-       x = "Change Percentage (%)",
-       y = "Frequency") +
-  theme_minimal()
-
-# Display the plots
-p1
-p2
-
+# Display the scatter plot
+p_scatter
 
 ```

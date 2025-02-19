@@ -17,13 +17,18 @@
     <img alt="Mantained" src="https://img.shields.io/badge/Maintained%3F-no-grey.svg" />
   </a>
   <a href="https://cran.r-project.org/web/packages/shiny/index.html">
-    <img alt="Python Version" src="https://img.shields.io/badge/r-4.1.2-blue.svg" />
+    <img alt="R Version" src="https://img.shields.io/badge/r-4.1.2-blue.svg" />
   </a>
 </div>
 
-Using public financial data together with in R to create an interactive Shiny App to check how noisy the stock market can be and definitely [not a tool to guide your personal finances](https://github.com/JAlcocerT/R_Stocks#important---no-investment-advice).
 
-* Further Description at: <https://jalcocert.github.io/JAlcocerT/R-Stocks/>
+The R Shiny Web App is documented [on **this post** →](https://jalcocert.github.io/JAlcocerT/R-Stocks/)
+
+Using public financial data together with in R to create an interactive Shiny App to check how noisy the stock market can be.
+
+> [!IMPORTANT]
+> Definitely [**not** a tool to guide your personal finances](https://github.com/JAlcocerT/R_Stocks#important---no-investment-advice).
+
 
 ## Repository Structure
 
@@ -38,7 +43,7 @@ Using public financial data together with in R to create an interactive Shiny Ap
 
 ## 🎯 Features and RoadMap
 
-* The R Shiny App:
+1. The R Shiny Web App
 
 <details>
   <summary>V1 Features :heavy_check_mark:</summary>
@@ -53,8 +58,11 @@ Using public financial data together with in R to create an interactive Shiny Ap
 
 </details>
 
-* The R FlexhDashboard: <https://jalcocert.github.io/R_Stocks/>
-  * Given SP500 historical data, to **classify months as per 'boom/burst'**
+2. The R FlexhDashboard
+
+* Given SP500 historical data, to **classify months as per 'boom/burst'**
+
+> See the Flexdashboard: <https://jalcocert.github.io/JAlcocerT/R-Stocks/>
 
 
 ### Powered Thanks To ❤️
@@ -62,6 +70,7 @@ Using public financial data together with in R to create an interactive Shiny Ap
 This project uses several open source libraries. 
 
 I am listing here the ones that served as major pilars for making the project come alive.
+
 #### Data Sources
 
 <details>

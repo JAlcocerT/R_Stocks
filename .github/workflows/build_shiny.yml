@@ -1,9 +1,10 @@
 name: Shiny CI/CD Pipeline
 
 on:
-  push:
-    branches:
-      - main
+  # push:
+  #   branches:
+  #     - main
+  workflow_dispatch:
 
 jobs:
   build-and-push:
