@@ -24,10 +24,10 @@
 
 The R Shiny Web App is documented [on **this post** →](https://jalcocert.github.io/JAlcocerT/R-Stocks/)
 
-Using public financial data together with in R to create an interactive Shiny App to check how noisy the stock market can be.
+Using public financial data together with in R to create an interactive Shiny App to check **how noisy the stock market can be**.
 
 > [!IMPORTANT]
-> Definitely [**not** a tool to guide your personal finances](https://github.com/JAlcocerT/R_Stocks#important---no-investment-advice).
+> Definitely [**NOT** a tool to guide your personal finances](https://github.com/JAlcocerT/R_Stocks#important---no-investment-advice).
 
 
 ## Repository Structure
@@ -58,9 +58,17 @@ Using public financial data together with in R to create an interactive Shiny Ap
 
 </details>
 
+![FlexDash Boom Burst](Z_Sample_Data/DividendEvo.jpeg)
+
+
+![FlexDash Boom Burst](Z_Sample_Data/DividendGrowth.jpeg)
+
 2. The R FlexhDashboard
 
 * Given SP500 historical data, to **classify months as per 'boom/burst'**
+
+![FlexDash Boom Burst](Z_Sample_Data/FlexDash-BoomBurst.png)
+
 
 > See the Flexdashboard: <https://jalcocert.github.io/JAlcocerT/R-Stocks/>
 
